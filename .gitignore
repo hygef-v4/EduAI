@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Agent & Environment configs
+antigravity-engineer/
+.gemini/
+.env
+.env.local
+*.log
+
+# Build & Output
+dist/
+build/
+out/
+.next/
