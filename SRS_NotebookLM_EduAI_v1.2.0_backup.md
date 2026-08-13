@@ -5,13 +5,13 @@
 | Information Category | Project Specification Details |
 | --- | --- |
 | **Project Code & Name** | `EDUAI_2026` - EduAI Intelligent Platform |
-| **Document Version** | `EDUAI_G5 - v1.3.0` |
+| **Document Version** | `EDUAI_G5 - v1.2.0` |
 | **Course Code / Semester** | Capstone Project / PRM393 - Fall 2026 |
 | **Instructor / Mentor** | Lecturer / Supervisor Name |
 | **Group Number** | Group 5 |
 | **Team Leader** | Student Leader Name (Roll No: SE170001) |
-| **Team Members** | 1. Member Name 2 (Roll No: SE170002)<br>2. Member Name 3 (Roll No: SE170003)<br>4. Member Name 4 (Roll No: SE170004)<br>5. Member Name 5 (Roll No: SE170005) |
-| **Date & Location** | August 13, 2026 - Hanoi, Vietnam |
+| **Team Members** | 1. Member Name 2 (Roll No: SE170002)<br>2. Member Name 3 (Roll No: SE170003)<br>3. Member Name 4 (Roll No: SE170004)<br>4. Member Name 5 (Roll No: SE170005) |
+| **Date & Location** | August 12, 2026 - Hanoi, Vietnam |
 
 ---
 
@@ -19,8 +19,9 @@
 
 | Date | A*, M, D | In charge | Change Description |
 | --- | --- | --- | --- |
-| 12/08/2026 | A | Software Architecture Team | Initial baseline SRS specification (v1.2.0) covering Core RAG, Exam Builder, and AI Grading. |
-| 13/08/2026 | A, M | Software Architecture & Examination Team | v1.3.0: Added Examination Officer (Khảo thí & Đảm bảo Chất lượng) actor, Grade Appeal & Dispute Lifecycle (UC83-UC87), Immutable Audit Logs, Three-Way Inspector, Gradebook Freeze workflow, and BR-AP01 to BR-AP09. |
+| | | | |
+| | | | |
+| | | | |
 
 *\*A - Added, M - Modified, D - Deleted*
 
@@ -30,20 +31,19 @@
 
 ## 1. Product Overview
 
-The **EduAI Intelligent Learning & Assessment Platform** is a Next-Generation AI-Powered EdTech system designed for high schools, universities, and educational centers. It combines **NotebookLM-style document RAG** (Retrieval-Augmented Generation), automated multi-format test generation, AI-powered multi-tier grading with error diagnostics, comprehensive Grade Appeal & Dispute Resolution with Examination Auditing, and interactive learning analytics.
+The **EduAI Intelligent Learning & Assessment Platform** is a Next-Generation AI-Powered EdTech system designed for high schools, universities, and educational centers. It combines **NotebookLM-style document RAG** (Retrieval-Augmented Generation), automated multi-format test generation, AI-powered multi-tier grading with error diagnostics, and interactive learning analytics.
 
 ### Core Areas of the Platform:
 1. **Knowledge Ingestion & Notebook RAG Engine:** Allows teachers and students to upload documents (PDF, DOCX, TXT, Web URLs) into subject-specific Notebooks. Text is chunked (512 tokens) and embedded using vector embeddings (`pgvector`) for accurate context retrieval.
 2. **AI-Powered Question & Test Generation:** Generates multi-format questions (Multiple Choice, True/False, Short Essay) directly linked to document chunks with explicit source citations.
 3. **Assessment & Exam Execution:** Timed examination environment with real-time auto-draft saving, question shuffling, and timeout auto-submission.
 4. **AI Automated Grading & Error Diagnostic Engine:** Combines exact-match auto-grading for objective items with LLM semantic evaluation for subjective essays. Provides root-cause error classification (`CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC`).
-5. **Grade Dispute, Appeal & Examination Auditing Engine:** Comprehensive human-in-the-loop dispute lifecycle allowing students to appeal questions within 48h with Notebook RAG/External evidence, teachers to review/adjust scores without downside penalty, and Examination Officers to perform 3-way auditing, overrule anomalies, and execute two-man official gradebook freeze.
-6. **Analytics & Competency Dashboard:** Renders Skill Radar charts, Common Mistake Matrices, AI Discrepancy Heatmaps, and class score distribution histograms.
+5. **Analytics & Competency Dashboard:** Renders Skill Radar charts, Common Mistake Matrices, and class score distribution histograms.
 
 ### Description of External Entities:
 * **Google Gemini API (Gemini 2.0 / 1.5 Flash):** External LLM service used for structured question generation, RAG synthesis, and subjective essay grading via strict JSON Schemas.
 * **Local AI / Ollama Engine:** Optional local LLM deployment (e.g., Qwen 2.5, Llama 3) for offline environments and low-latency local inference.
-* **Supabase / PostgreSQL (with `pgvector`):** Relational database storing user data, exams, grades, audit logs, and vector embeddings for hybrid dense semantic search.
+* **Supabase / PostgreSQL (with `pgvector`):** Relational database storing user data, exams, grades, and vector embeddings for hybrid dense semantic search.
 * **Docker Sandbox Engine (Phase 2 Deferred):** Containerized execution runtime for interactive programming Code Lab challenges.
 
 ```mermaid
@@ -57,12 +57,11 @@ flowchart TB
         RAG["1. Document RAG Engine"]
         QG["2. Question & Exam Engine"]
         GR["3. AI Grading & Diagnostics Engine"]
-        AP["4. Grade Appeal & Audit Engine"]
-        AN["5. Analytics & Dashboard Subsystem"]
+        AN["4. Analytics & Dashboard Subsystem"]
     end
 
     subgraph ExternalServices ["External Infrastructure & AI Services"]
-        PG[("PostgreSQL DB\n(pgvector + Audit Logs)")]
+        PG[("PostgreSQL DB\n(pgvector embeddings)")]
         GEM["Google Gemini API\n(JSON Schema LLM)"]
         OLL["Local AI / Ollama\n(Fallback LLM)"]
         SB["Docker Sandbox\n(Phase 2 Deferred)"]
@@ -71,7 +70,6 @@ flowchart TB
     FE_Web --> RAG
     FE_Web --> QG
     FE_Web --> GR
-    FE_Web --> AP
     FE_Web --> AN
     FE_Mobile --> FE_Web
 
@@ -81,7 +79,6 @@ flowchart TB
     QG <--> OLL
     GR <--> GEM
     GR <--> PG
-    AP <--> PG
     GR -.-> SB
 ```
 
@@ -94,12 +91,11 @@ flowchart TB
 | # | Actor | Description |
 | --- | --- | --- |
 | 1 | **System Admin** | The administrator with highest system privileges. Responsible for configuring active AI model providers (Gemini/Ollama), monitoring daily token usage, managing global quotas, and managing user roles. |
-| 2 | **Teacher** | The primary content creator and evaluator. Responsible for creating Class Workspaces, uploading course materials into Notebooks, generating AI quizzes, assembling exam papers, reviewing AI grades, arbitrating student grade appeals, and requesting gradebook freezes. |
-| 3 | **Student** | The end learner. Responsible for enrolling in classes via join codes, studying Notebook documents, taking timed exams, viewing instant score results, reviewing AI diagnostic error breakdowns, and filing question grade appeals within 48h. |
+| 2 | **Teacher** | The primary content creator and evaluator. Responsible for creating Class Workspaces, uploading course materials into Notebooks, generating AI quizzes, assembling exam papers, and reviewing/overriding AI grades. |
+| 3 | **Student** | The end learner. Responsible for enrolling in classes via join codes, studying Notebook documents, taking timed exams, viewing instant score results, and reviewing AI diagnostic error breakdowns. |
 | 4 | **Content Admin** | Specialized administrative staff responsible for maintaining shared institutional Question Banks and central learning material repositories. |
-| 5 | **Examination Officer (Khảo thí & Đảm bảo chất lượng)** | Independent academic auditor responsible for university-wide dispute oversight, three-way discrepancy auditing (Student vs AI vs Teacher), arbitrating SLA-breached appeals (>72h), overruling abnormal score adjustments, and executing final official gradebook sign-off/freeze. |
-| 6 | **Google Gemini API (External)** | External LLM service providing structured JSON question generation, RAG context synthesis, and semantic essay evaluation. |
-| 7 | **Local AI Engine (External)** | Alternative local AI provider (Ollama) used for local execution. |
+| 5 | **Google Gemini API (External)** | External LLM service providing structured JSON question generation, RAG context synthesis, and semantic essay evaluation. |
+| 6 | **Local AI Engine (External)** | Alternative local AI provider (Ollama) used for local execution. |
 
 ---
 
@@ -124,8 +120,6 @@ flowchart LR
         UC48["UC048: Auto-submit Timeout"]
         UC50["UC050: View Instant Practice Result"]
         UC63["UC063: View Skill Radar Chart"]
-        UC83["UC083: Submit Question Grade Appeal"]
-        UC84["UC084: Cancel Grade Appeal"]
     end
 
     Student --> UC01
@@ -135,8 +129,6 @@ flowchart LR
     Student --> UC40
     Student --> UC50
     Student --> UC63
-    Student --> UC83
-    Student --> UC84
 
     UC16 -.->|include| UC26
     UC40 -.->|include| UC44
@@ -160,8 +152,6 @@ flowchart LR
         UC57["UC057: Classify Error Category"]
         UC59["UC059: Override AI Score Manually"]
         UC69["UC069: Analyze Score Histogram"]
-        UC85["UC085: Review & Resolve Grade Appeal"]
-        UC87["UC087: Request Gradebook Freeze"]
     end
 
     Teacher --> UC04
@@ -171,38 +161,13 @@ flowchart LR
     Teacher --> UC37
     Teacher --> UC59
     Teacher --> UC69
-    Teacher --> UC85
-    Teacher --> UC87
 
     UC27 -.->|extend| UC16
     UC53 -.->|include| UC57
     UC59 -.->|extend| UC53
 ```
 
-##### Diagram 3: Examination Officer Auditing & Dispute Resolution Use Cases
-
-```mermaid
-flowchart LR
-    Auditor(("Examination Officer\n(Khảo thí)"))
-
-    subgraph AuditorBoundary ["Examination Auditing & Dispute Module"]
-        UC86A["UC086A: View University Dispute Audit Trail"]
-        UC86B["UC086B: Three-Way Inspection (Student vs AI vs Teacher)"]
-        UC86C["UC086C: Arbitrate SLA-Breached Appeal (>72h)"]
-        UC86D["UC086D: Overrule Abnormal Score Adjustments"]
-        UC86E["UC086E: Monitor AI Discrepancy Anomaly Heatmap"]
-        UC87B["UC087B: Approve & Execute Final Gradebook Freeze"]
-    end
-
-    Auditor --> UC86A
-    Auditor --> UC86B
-    Auditor --> UC86C
-    Auditor --> UC86D
-    Auditor --> UC86E
-    Auditor --> UC87B
-```
-
-##### Diagram 4: System Admin & External AI Integration Use Cases
+##### Diagram 3: System Admin & External AI Integration Use Cases
 
 ```mermaid
 flowchart LR
@@ -233,7 +198,7 @@ flowchart LR
 | ID | Group function | Use Case | Actors | Use Case Description & Main Flow |
 | --- | --- | --- | --- | --- |
 | 1 | Account & Profile Management | Register Account & Authenticate SSO | All Users | **Description:** Register and log in via Google OAuth2, Email/Password, or SSO integration.<br>**Main Flow:** 1. User enters credentials. 2. System validates input. 3. System issues JWT token. 4. User is redirected to Dashboard. |
-| 2 | Account & Profile Management | Assign User Roles & Permissions | System Admin | **Description:** Grant system roles: Student, Teacher, Content Admin, Examination Officer, System Admin.<br>**Main Flow:** 1. Admin selects user. 2. Selects new role. 3. System updates permissions in DB. |
+| 2 | Account & Profile Management | Assign User Roles & Permissions | System Admin | **Description:** Grant system roles: Student, Teacher, Content Admin, System Admin.<br>**Main Flow:** 1. Admin selects user. 2. Selects new role. 3. System updates permissions in DB. |
 | 3 | Account & Profile Management | Update User Profile | All Users | **Description:** Modify personal profile information, avatar image, and UI themes.<br>**Main Flow:** 1. User opens Profile. 2. Updates details. 3. System saves to database. |
 | 4 | Account & Profile Management | Create Class Workspace | Teacher | **Description:** Set up a new subject workspace with custom join codes.<br>**Main Flow:** 1. Teacher inputs class name & subject code. 2. System generates 6-char join code. 3. Workspace created. |
 | 5 | Account & Profile Management | Enroll in Class Workspace | Student | **Description:** Join a class workspace using unique join codes.<br>**Main Flow:** 1. Student inputs 6-char join code. 2. System verifies code. 3. Adds student to class. |
@@ -313,12 +278,7 @@ flowchart LR
 | 79 | System Admin & Guardrails | View Exception & Error Logs | System Admin | **Description:** Inspect application logs, AI API timeouts, and execution error stack traces.<br>**Main Flow:** 1. Admin opens System Logs. 2. System renders log entries with filters. |
 | 80 | System Admin & Guardrails | Configure Maintenance Mode | System Admin | **Description:** Broadcast system announcements and toggle maintenance window states.<br>**Main Flow:** 1. Admin toggles maintenance mode. 2. System displays banner to users. |
 | 81 | System Admin & Guardrails | Backup Database Snapshots | System Admin | **Description:** Trigger maintenance tasks and vector database snapshot backups.<br>**Main Flow:** 1. Admin clicks Backup Database. 2. System triggers snapshot process. |
-| 82 | System Admin & Guardrails | Audit Performance & Latency | System Admin | **Description:** Monitor vector search latency and API response performance metrics.<br>**Main Flow:** 1. Admin views performance metrics. 2. System displays latency charts. |
-| 83 | Grade Dispute & Auditing | Submit Question Grade Appeal | Student | **Description:** Create appeal against question grade within 48h, attaching Notebook Chunk or external reference.<br>**Main Flow:** 1. Student selects question. 2. Inputs reason ($\ge$ 30 chars) & evidence. 3. System creates `grade_appeals` record and locks submission. |
-| 84 | Grade Dispute & Auditing | Cancel Grade Appeal | Student | **Description:** Withdraw submitted grade appeal prior to teacher claim.<br>**Main Flow:** 1. Student opens appeal. 2. Clicks Cancel. 3. System updates status to `CANCELLED` and unlocks submission if clean. |
-| 85 | Grade Dispute & Auditing | Review & Resolve Grade Appeal | Teacher | **Description:** Claim and adjudicate student dispute with zero-downside adjustment rule.<br>**Main Flow:** 1. Teacher claims appeal. 2. Reviews 3-way context. 3. Submits `APPROVED` / `REJECTED` with $\ge$ 20 chars feedback. 4. System updates score and submission status. |
-| 86 | Grade Dispute & Auditing | Audit & Arbitrate Grade Dispute | Examination Officer | **Description:** Perform university-wide three-way auditing, resolve SLA-breached cases (>72h), and overrule abnormal adjustments.<br>**Main Flow:** 1. Auditor filters appeals or anomaly flags. 2. Inspects 3-way view. 3. Enforces resolution or overrule. 4. Writes immutable audit log. |
-| 87 | Grade Dispute & Auditing | Request & Execute Gradebook Freeze | Teacher, Examination Officer | **Description:** Teacher requests gradebook close; Examination Officer verifies and executes final sign-off.<br>**Main Flow:** 1. Teacher clicks Request Freeze. 2. Auditor inspects AI discrepancy metrics. 3. Auditor approves Final Sign-off. 4. Gradebook status changes to `FROZEN`. |
+| 82 | System Admin & Guardrails | Audit Performance & Latency | System Admin | **Description:** Monitor vector search latency and API response performance metrics.<br>**Main Flow:** 1. Admin views performance metrics. 2. System displays latency charts. |metrics. |
 
 ---
 
@@ -338,22 +298,18 @@ flowchart TD
     ExamBuilder["Exam Builder Screen"]
     ExamLobby["Exam Lobby"]
     ExamRoom["Timed Exam Screen"]
-    ResultView["Instant Grade Result & Appeal Modal"]
-    TeacherAppeal["Teacher Dispute Review Queue"]
-    AuditorPortal["Examination Audit & Discrepancy Portal"]
+    ResultView["Instant Grade Result"]
     Analytics["Student Analytics Dashboard"]
     AdminPanel["AI Admin Panel"]
 
     Login -->|Authenticated| Dash
     Dash -->|Student| Workspace
     Dash -->|Teacher| Workspace
-    Dash -->|Examination Officer| AuditorPortal
     Dash -->|System Admin| AdminPanel
 
     Workspace --> Notebook
     Workspace --> ExamBuilder
     Workspace --> ExamLobby
-    Workspace --> TeacherAppeal
 
     Notebook --> QuizStudio
     QuizStudio -->|Generate| Notebook
@@ -361,9 +317,7 @@ flowchart TD
     ExamBuilder -->|Publish Exam| Workspace
     ExamLobby -->|Start Timer| ExamRoom
     ExamRoom -->|Submit / Timeout| ResultView
-    ResultView -->|File Appeal within 48h| TeacherAppeal
     ResultView --> Analytics
-    TeacherAppeal -->|Escalate >72h / Anomaly| AuditorPortal
 ```
 
 #### 3.1.2 Screen Descriptions
@@ -381,32 +335,25 @@ flowchart TD
 | 9 | AI Grading | Grading & Diagnostics View | Detailed gradebook view showing auto-graded scores, AI essay reasoning, and error categories. |
 | 10 | Analytics | Student Analytics Dashboard | Visual analytics screen displaying GPA velocity, Skill Radar chart, and Mistake Matrix. |
 | 11 | System Admin | AI Admin Panel | System admin dashboard to toggle AI provider models (Gemini/Ollama) and view token costs. |
-| 12 | Grade Dispute & Audit | Examination Audit Portal | Central portal for Examination Officers to monitor disputes university-wide, SLA breaches, and AI discrepancy heatmaps. |
-| 13 | Grade Dispute & Audit | Three-Way Inspection Modal | Comparative inspection screen displaying Student Response vs AI Grading vs Teacher Adjudication with overrule actions. |
-| 14 | Grade Dispute & Audit | Student Grade Appeal Modal | Interactive modal for students to submit dispute rationale ($\ge$ 30 chars) and attach Notebook chunk citations within 48h. |
-| 15 | Grade Dispute & Audit | Teacher Dispute Review Queue | Workspace queue for teachers to claim, review evidence chunks, adjust scores (no downside), and request gradebook freeze. |
 
 ---
 
 #### 3.1.3 Screen Authorization Matrix
 
-| # | Screen / Feature Action | Student | Teacher | Content Admin | Examination Officer | System Admin |
-| --- | --- | :---: | :---: | :---: | :---: | :---: |
-| 1 | Register / Login / Profile (`UC001`, `UC003`) | X | X | X | X | X |
-| 2 | Create & Manage Class Workspace (`UC004`, `UC006`) | - | X | - | - | X |
-| 3 | Enroll in Class Workspace (`UC005`) | X | - | - | - | - |
-| 4 | Upload Document & Manage Notebooks (`UC009`, `UC010`, `UC012`, `UC015`) | X | X | X | - | X |
-| 5 | Generate AI Quiz & Questions (`UC016`, `UC017`, `UC018`, `UC020`) | X | X | X | - | X |
-| 6 | Edit & Save to Question Bank (`UC027`, `UC029`) | - | X | X | - | X |
-| 7 | Assemble & Schedule Exam Paper (`UC030`, `UC032`, `UC033`, `UC037`) | - | X | - | - | X |
-| 8 | Execute Timed Exam & Auto-save (`UC040`, `UC041`, `UC044`, `UC049`) | X | - | - | - | - |
-| 9 | View AI Grading Results & Diagnostic Explanations (`UC050`, `UC051`, `UC056`, `UC057`) | X | X | X | X | X |
-| 10 | Override AI Grade Manually (`UC059`) | - | X | - | - | X |
-| 11 | View Performance Dashboard & Skill Radar (`UC063`, `UC064`, `UC065`, `UC069`) | X | X | X | X | X |
-| 12 | Configure AI Providers & Monitor Token Costs (`UC074`, `UC076`) | - | - | - | - | X |
-| 13 | Submit / Cancel Question Grade Appeal (`UC083`, `UC084`) | X | - | - | - | - |
-| 14 | Claim & Resolve Class Grade Appeals (`UC085`) | - | X | - | - | X |
-| 15 | University-wide Three-Way Audit, Overrule & Final Sign-off (`UC086`, `UC087`) | - | - | - | X | X |
+| # | Screen / Feature Action | Student | Teacher | Content Admin | System Admin |
+| --- | --- | :---: | :---: | :---: | :---: |
+| 1 | Register / Login / Profile (`UC001`, `UC003`) | X | X | X | X |
+| 2 | Create & Manage Class Workspace (`UC004`, `UC006`) | - | X | - | X |
+| 3 | Enroll in Class Workspace (`UC005`) | X | - | - | - |
+| 4 | Upload Document & Manage Notebooks (`UC009`, `UC010`, `UC012`, `UC015`) | X | X | X | X |
+| 5 | Generate AI Quiz & Questions (`UC016`, `UC017`, `UC018`, `UC020`) | X | X | X | X |
+| 6 | Edit & Save to Question Bank (`UC027`, `UC029`) | - | X | X | X |
+| 7 | Assemble & Schedule Exam Paper (`UC030`, `UC032`, `UC033`, `UC037`) | - | X | - | X |
+| 8 | Execute Timed Exam & Auto-save (`UC040`, `UC041`, `UC044`, `UC049`) | X | - | - | - |
+| 9 | View AI Grading Results & Diagnostic Explanations (`UC050`, `UC051`, `UC056`, `UC057`) | X | X | X | X |
+| 10 | Override AI Grade Manually (`UC059`) | - | X | - | X |
+| 11 | View Performance Dashboard & Skill Radar (`UC063`, `UC064`, `UC065`, `UC069`) | X | X | X | X |
+| 12 | Configure AI Providers & Monitor Token Costs (`UC074`, `UC076`) | - | - | - | X |
 
 ---
 
@@ -418,8 +365,6 @@ flowchart TD
 | 2 | AI Grading Engine | Auto-Grading Queue Worker | Background queue processing student exam submissions: runs exact-match grading for objective items and dispatches LLM API requests for essay grading. |
 | 3 | Test Execution | Real-time Auto-Save Sync | Silent background timer running every 10 seconds on client UI to sync draft answers to database without freezing UI interaction. |
 | 4 | Security & Safety | Local PII Sanitizer | Local filter masking student personal identifiers (names, student IDs, emails) before transmitting context text payloads to external LLM APIs. |
-| 5 | Grade Dispute & Audit | SLA Escalation Watcher | Scheduled cron worker scanning for unresolved appeals $> 72$ hours, escalating status to `ESCALATED_TO_AUDITOR` and alerting Examination Officers. |
-| 6 | Grade Dispute & Audit | AI Anomaly Detector | Automated evaluator flagging exams where appeal rate $\ge 20\%$ or score discrepancy $> 30\%$, tagging records with `is_anomaly_flagged = TRUE`. |
 
 ---
 
@@ -429,26 +374,18 @@ flowchart TD
 erDiagram
     USERS ||--o{ CLASS_WORKSPACES : "creates"
     USERS ||--o{ EXAM_SUBMISSIONS : "submits"
-    USERS ||--o{ GRADE_APPEALS : "files_or_adjudicates"
-    USERS ||--o{ GRADE_DISPUTE_AUDIT_LOGS : "logs_action"
     CLASS_WORKSPACES ||--o{ CLASS_MEMBERS : "contains"
     CLASS_WORKSPACES ||--o{ NOTEBOOKS : "owns"
     CLASS_WORKSPACES ||--o{ EXAM_PAPERS : "publishes"
-    CLASS_WORKSPACES ||--o{ EXAM_GRADEBOOK_FREEZES : "freezes"
     NOTEBOOKS ||--o{ DOCUMENTS : "holds"
     DOCUMENTS ||--o{ DOCUMENT_CHUNKS : "chunked_into"
     DOCUMENT_CHUNKS ||--o{ QUESTION_ITEMS : "cited_by"
-    DOCUMENT_CHUNKS ||--o{ GRADE_APPEALS : "evidenced_by"
     QUESTION_BANKS ||--o{ QUESTION_ITEMS : "stores"
     QUESTION_ITEMS ||--o{ QUESTION_OPTIONS : "has_choices"
-    QUESTION_ITEMS ||--o{ GRADE_APPEALS : "disputed_in"
     EXAM_PAPERS ||--o{ EXAM_ITEMS : "includes"
-    EXAM_PAPERS ||--o{ EXAM_GRADEBOOK_FREEZES : "has_freeze_status"
     EXAM_ITEMS }o--|| QUESTION_ITEMS : "references"
     EXAM_SUBMISSIONS ||--o{ SUBMISSION_ANSWERS : "contains_answers"
-    EXAM_SUBMISSIONS ||--o{ GRADE_APPEALS : "has_appeals"
     SUBMISSION_ANSWERS ||--|| AI_GRADING_RESULTS : "evaluated_by"
-    GRADE_APPEALS ||--o{ GRADE_DISPUTE_AUDIT_LOGS : "tracks_history"
 
     USERS {
         uuid id PK
@@ -514,41 +451,13 @@ erDiagram
         string error_category
         text detailed_reasoning
     }
-    GRADE_APPEALS {
-        uuid id PK
-        uuid submission_id FK
-        uuid question_id FK
-        uuid student_id FK
-        uuid teacher_id FK
-        uuid auditor_id FK
-        string status
-        double original_ai_score
-        double final_score
-        text student_reason
-        text teacher_feedback
-    }
-    GRADE_DISPUTE_AUDIT_LOGS {
-        uuid id PK
-        uuid appeal_id FK
-        uuid actor_id FK
-        string actor_role
-        string action
-        double score_delta
-    }
-    EXAM_GRADEBOOK_FREEZES {
-        uuid id PK
-        uuid exam_id FK
-        uuid workspace_id FK
-        string status
-        double ai_discrepancy_rate
-    }
 ```
 
 #### Entity Overview Table
 
 | # | Entity Name | Description |
 | --- | --- | --- |
-| 1 | `users` | Stores system account data (Students, Teachers, Examination Officers, Admins) including authentication credentials and roles. |
+| 1 | `users` | Stores system account data (Students, Teachers, Admins) including authentication credentials and roles. |
 | 2 | `class_workspaces` | Stores subject class workspaces created by teachers with unique join codes. |
 | 3 | `class_members` | Junction table mapping user enrollment inside class workspaces with specific permissions. |
 | 4 | `notebooks` | Groups uploaded learning documents by subject topics. |
@@ -559,14 +468,11 @@ erDiagram
 | 9 | `question_options` | Answer options for Multiple Choice Question items indicating correct key distractors. |
 | 10 | `exam_papers` | Exam papers assembled from question items with countdown timers and scheduled windows. |
 | 11 | `exam_items` | Junction table linking specific question items to exam papers with assigned point weightings. |
-| 12 | `exam_submissions` | Student exam attempt records capturing submission status (`IN_PROGRESS`, `SUBMITTED`, `GRADED`, `LOCKED_APPEAL`), start time, and final score. |
+| 12 | `exam_submissions` | Student exam attempt records capturing submission status, start time, and final score. |
 | 13 | `submission_answers` | Student answer entries submitted for individual questions in an exam attempt. |
 | 14 | `ai_grading_results` | Detailed AI evaluation outputs storing scores, reasoning, and error classification taxonomy. |
 | 15 | `mistake_logs` | Aggregated records tracking student mistake occurrences to power Mistake Matrix analytics. |
 | 16 | `token_usage_logs` | Tracks real-time LLM token consumption and estimated API cost per request. |
-| 17 | `grade_appeals` | Records question-level dispute petitions submitted by students with evidence citations and adjudication outcomes. |
-| 18 | `grade_dispute_audit_logs` | Immutable audit trail tracking every score change, claim event, overrule, and rationale note. |
-| 19 | `exam_gradebook_freezes` | Manages the formal two-man sign-off workflow to lock class gradebooks officially. |
 
 ---
 
@@ -581,7 +487,7 @@ erDiagram
 | 3 | `password_hash` | - | String | Yes | One-way encrypted password string using BCrypt algorithm. |
 | 4 | `full_name` | - | String | Yes | Full legal name of the user. |
 | 5 | `avatar_url` | - | String | No | HTTPS URL to uploaded avatar image. |
-| 6 | `role` | - | String | Yes | User role (`SYSTEM_ADMIN`, `TEACHER`, `STUDENT`, `CONTENT_ADMIN`, `EXAMINATION_OFFICER`). |
+| 6 | `role` | - | String | Yes | User role (`SYSTEM_ADMIN`, `TEACHER`, `STUDENT`, `CONTENT_ADMIN`). |
 | 7 | `status` | - | String | Yes | Account status (`ACTIVE`, `SUSPENDED`, `INACTIVE`). |
 | 8 | `created_at` | - | Timestamp | Yes | Date and time when the user account was created. |
 
@@ -640,7 +546,7 @@ erDiagram
 | 1 | `id` | PK | UUID | Yes | Unique identifier of the question item. |
 | 2 | `question_bank_id`| FK | UUID | No | References `question_banks(id)` if saved to bank. |
 | 3 | `chunk_id` | FK | UUID | Yes | References `document_chunks(id)` for citation. |
-| 4 | `type` | - | String | Yes | Question item type (`MULTIPLE_CHOICE`, `TRUE_FALSE`, `SHORT_ESSAY`, `CODE_LAB`). |
+| 4 | `type` | - | String | Yes | Question item type (`MULTIPLE_CHOICE`, `TRUE_FALSE`, `SHORT_ESSAY`). |
 | 5 | `difficulty` | - | String | Yes | Difficulty level (`EASY`, `MEDIUM`, `HARD`, `EXPERT`). |
 | 6 | `prompt` | - | Text | Yes | The question prompt text. |
 | 7 | `correct_answer` | - | Text | Yes | Ground truth correct answer or model golden answer. |
@@ -666,12 +572,11 @@ erDiagram
 | 1 | `id` | PK | UUID | Yes | Unique identifier of the student exam submission attempt. |
 | 2 | `exam_id` | FK | UUID | Yes | References `exam_papers(id)`. |
 | 3 | `student_id` | FK | UUID | Yes | References `users(id)`. |
-| 4 | `status` | - | String | Yes | Status (`IN_PROGRESS`, `SUBMITTED`, `GRADED`, `LOCKED_APPEAL`). |
+| 4 | `status` | - | String | Yes | Submission status (`IN_PROGRESS`, `SUBMITTED`, `GRADED`). |
 | 5 | `total_score` | - | Double | No | Total calculated score awarded. |
 | 6 | `max_score` | - | Double | Yes | Maximum possible score for the exam paper. |
 | 7 | `started_at` | - | Timestamp | Yes | Timestamp when student initiated exam. |
 | 8 | `submitted_at` | - | Timestamp | No | Timestamp when exam attempt was finalized. |
-| 9 | `published_at` | - | Timestamp | No | Timestamp when official score was published to student. |
 
 #### 9. Entity: `ai_grading_results`
 
@@ -680,11 +585,10 @@ erDiagram
 | 1 | `id` | PK | UUID | Yes | Unique identifier of the AI grading result. |
 | 2 | `submission_id` | FK | UUID | Yes | References `exam_submissions(id)`. |
 | 3 | `question_id` | FK | UUID | Yes | References `question_items(id)`. |
-| 4 | `score_awarded` | - | Double | Yes | Points awarded by AI or updated via dispute resolution. |
+| 4 | `score_awarded` | - | Double | Yes | Points awarded by AI or teacher override. |
 | 5 | `error_category` | - | String | Yes | Root cause category tag (`NONE`, `CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC`). |
 | 6 | `detailed_reasoning`| - | Text | Yes | Detailed AI reasoning explaining score deduction. |
 | 7 | `improvement_hint` | - | Text | No | Direct remediation guidance for student improvement. |
-| 8 | `overridden_by` | FK | UUID | No | References `users(id)` if score was updated by teacher/auditor. |
 
 #### 10. Entity: `class_members`
 
@@ -757,68 +661,11 @@ erDiagram
 | 5 | `completion_tokens`| - | Integer | Yes | Number of output completion tokens generated. |
 | 6 | `cost_usd` | - | Double | Yes | Estimated API cost in USD. |
 
-#### 17. Entity: `grade_appeals`
-
-| # | Attribute name | PK/FK | Type | Mandatory | Description |
-| --- | --- | --- | --- | --- | --- |
-| 1 | `id` | PK | UUID | Yes | Unique identifier of the grade appeal record. |
-| 2 | `submission_id` | FK | UUID | Yes | References `exam_submissions(id)`. |
-| 3 | `question_id` | FK | UUID | Yes | References `question_items(id)`. |
-| 4 | `student_id` | FK | UUID | Yes | References `users(id)` (Student filing appeal). |
-| 5 | `teacher_id` | FK | UUID | No | References `users(id)` (Teacher claiming/resolving). |
-| 6 | `auditor_id` | FK | UUID | No | References `users(id)` (Auditor if escalated/overruled). |
-| 7 | `student_reason` | - | Text | Yes | Student dispute justification ($\ge$ 30 characters). |
-| 8 | `evidence_chunk_id`| FK | UUID | No | References `document_chunks(id)` from Notebook RAG. |
-| 9 | `evidence_external_text`| - | Text | No | External reference link or quote text. |
-| 10 | `original_ai_score`| - | Double | Yes | Initial score assigned by AI grading engine. |
-| 11 | `final_score` | - | Double | No | Resolved score after dispute adjudication. |
-| 12 | `teacher_feedback`| - | Text | No | Teacher resolution justification ($\ge$ 20 characters). |
-| 13 | `auditor_notes` | - | Text | No | Examination Officer inspection notes. |
-| 14 | `status` | - | String | Yes | Status (`SUBMITTED`, `UNDER_REVIEW`, `APPROVED`, `REJECTED`, `CANCELLED`, `ESCALATED_TO_AUDITOR`, `AUDITOR_RESOLVED`, `AUDITOR_OVERRULED`). |
-| 15 | `is_anomaly_flagged`| - | Boolean | Yes | Flagged TRUE if discrepancy $> 30\%$ or class rate $\ge 20\%$. |
-| 16 | `created_at` | - | Timestamp | Yes | Timestamp when appeal was submitted. |
-| 17 | `reviewed_at` | - | Timestamp | No | Timestamp when teacher clicked claim. |
-| 18 | `resolved_at` | - | Timestamp | No | Timestamp when adjudication was finalized. |
-| 19 | `escalated_at` | - | Timestamp | No | Timestamp when SLA $>72$h escalated to auditor. |
-
-#### 18. Entity: `grade_dispute_audit_logs`
-
-| # | Attribute name | PK/FK | Type | Mandatory | Description |
-| --- | --- | --- | --- | --- | --- |
-| 1 | `id` | PK | UUID | Yes | Unique identifier of the dispute audit log. |
-| 2 | `appeal_id` | FK | UUID | Yes | References `grade_appeals(id)`. |
-| 3 | `actor_id` | FK | UUID | Yes | References `users(id)` (User performing action). |
-| 4 | `actor_role` | - | String | Yes | Role (`TEACHER`, `EXAMINATION_OFFICER`, `SYSTEM_ADMIN`). |
-| 5 | `action` | - | String | Yes | Action type (`CLAIMED`, `RESOLVED_APPROVED`, `RESOLVED_REJECTED`, `ESCALATED`, `AUDITOR_RESOLVE`, `AUDITOR_OVERRULE`). |
-| 6 | `previous_score` | - | Double | No | Score prior to this action. |
-| 7 | `new_score` | - | Double | No | Score after this action. |
-| 8 | `score_delta` | - | Double | No | Calculated difference ($\Delta = \text{new} - \text{prev}$). |
-| 9 | `reason_note` | - | Text | Yes | Written rationale note explaining the change. |
-| 10 | `ip_address` | - | String | No | Client IP address for security auditing. |
-| 11 | `created_at` | - | Timestamp | Yes | Immutable timestamp of the audit entry. |
-
-#### 19. Entity: `exam_gradebook_freezes`
-
-| # | Attribute name | PK/FK | Type | Mandatory | Description |
-| --- | --- | --- | --- | --- | --- |
-| 1 | `id` | PK | UUID | Yes | Unique identifier of the gradebook freeze record. |
-| 2 | `exam_id` | FK | UUID | Yes | References `exam_papers(id)`. |
-| 3 | `workspace_id` | FK | UUID | Yes | References `class_workspaces(id)`. |
-| 4 | `status` | - | String | Yes | Status (`OPEN`, `PENDING_APPROVAL`, `FROZEN`). |
-| 5 | `requested_by_teacher_id`| FK | UUID | No | References `users(id)` (Teacher requesting freeze). |
-| 6 | `requested_at` | - | Timestamp | No | Timestamp of teacher request. |
-| 7 | `approved_by_auditor_id`| FK | UUID | No | References `users(id)` (Auditor signing off). |
-| 8 | `frozen_at` | - | Timestamp | No | Timestamp when official lock was executed. |
-| 9 | `total_submissions`| - | Integer | Yes | Count of total completed exam attempts. |
-| 10 | `total_appeals` | - | Integer | Yes | Count of total filed grade appeals. |
-| 11 | `resolved_appeals`| - | Integer | Yes | Count of resolved appeals. |
-| 12 | `ai_discrepancy_rate`| - | Double | Yes | Calculated percentage of AI-graded items adjusted. |
-
 ---
 
 ### 3.1.7 API Specification (API Doc)
 
-#### Master API Endpoints Catalog (40 REST APIs)
+#### Master API Endpoints Catalog (32 REST APIs)
 
 | # | HTTP Method | Endpoint Path | Module | Description | Allowed Roles |
 | --- | --- | --- | --- | --- | --- |
@@ -854,16 +701,6 @@ erDiagram
 | 30 | `GET` | `/api/v1/admin/ai-providers` | System Admin | Get active LLM model providers & status | System Admin |
 | 31 | `PUT` | `/api/v1/admin/ai-providers/switch` | System Admin | Switch active AI provider engine (Gemini / Ollama) | System Admin |
 | 32 | `GET` | `/api/v1/admin/token-usage` | System Admin | Track daily token consumption & API costs | System Admin |
-| 33 | `POST` | `/api/v1/submissions/{subId}/questions/{qId}/appeals` | Grade Dispute | File a question grade appeal within 48h window | Student |
-| 34 | `PATCH` | `/api/v1/appeals/{appealId}/cancel` | Grade Dispute | Withdraw submitted grade appeal prior to claim | Student |
-| 35 | `GET` | `/api/v1/teachers/workspaces/{wsId}/appeals` | Grade Dispute | List appeals belonging to a class workspace | Teacher, Admin |
-| 36 | `POST` | `/api/v1/appeals/{appealId}/claim` | Grade Dispute | Teacher claims dispute for review (`UNDER_REVIEW`)| Teacher |
-| 37 | `PUT` | `/api/v1/appeals/{appealId}/resolve` | Grade Dispute | Teacher resolves appeal (`APPROVED` / `REJECTED`) | Teacher |
-| 38 | `GET` | `/api/v1/auditor/appeals` | Examination Audit | List appeals university-wide with anomaly filters | Examination Officer |
-| 39 | `GET` | `/api/v1/auditor/appeals/{appealId}/three-way-view` | Examination Audit | Retrieve 3-way comparative audit inspection data | Examination Officer |
-| 40 | `PUT` | `/api/v1/auditor/appeals/{appealId}/overrule` | Examination Audit | Arbitrate or overrule teacher adjudication | Examination Officer |
-| 41 | `POST` | `/api/v1/exams/{examId}/request-freeze` | Examination Audit | Teacher requests official gradebook freeze | Teacher |
-| 42 | `POST` | `/api/v1/auditor/exams/{examId}/sign-off` | Examination Audit | Examination Officer executes final sign-off lock | Examination Officer |
 
 ---
 
@@ -1033,107 +870,6 @@ erDiagram
 
 ---
 
-##### Contract 6: Student Submit Grade Appeal (`POST /api/v1/submissions/{id}/questions/{qid}/appeals`)
-* **Path:** `POST /api/v1/submissions/a9876543-2109-8765-4321-098765432109/questions/c2345678-9abc-def0-1234-56789abcdef0/appeals`
-* **Headers:** `Authorization: Bearer <STUDENT_JWT>`, `Content-Type: application/json`
-* **Request JSON Payload:**
-```json
-{
-  "student_reason": "Em da giai thich ro co che hybrid dense retrieval o dong 3 nhung AI chi cho 2.5/5.0 diem.",
-  "evidence_chunk_id": "c8b4a7d2-311e-4c7b-99df-51a812345678",
-  "evidence_external_text": null
-}
-```
-* **Response Payload (201 Created):**
-```json
-{
-  "appeal_id": "d1112223-3344-5566-7788-99aabbccdde0",
-  "submission_id": "a9876543-2109-8765-4321-098765432109",
-  "question_id": "c2345678-9abc-def0-1234-56789abcdef0",
-  "status": "SUBMITTED",
-  "submission_status": "LOCKED_APPEAL",
-  "created_at": "2026-08-13T08:30:00Z"
-}
-```
-
----
-
-##### Contract 7: Teacher Resolve Appeal (`PUT /api/v1/appeals/{id}/resolve`)
-* **Path:** `PUT /api/v1/appeals/d1112223-3344-5566-7788-99aabbccdde0/resolve`
-* **Headers:** `Authorization: Bearer <TEACHER_JWT>`, `Content-Type: application/json`
-* **Request JSON Payload:**
-```json
-{
-  "decision": "APPROVED",
-  "final_score": 4.5,
-  "teacher_feedback": "Thay da kiem tra lai chunk giao trinh va dong y voi lap luan ve dense retrieval cua em. Cong them 2.0 diem."
-}
-```
-* **Response Payload (200 OK):**
-```json
-{
-  "appeal_id": "d1112223-3344-5566-7788-99aabbccdde0",
-  "status": "APPROVED",
-  "original_ai_score": 2.5,
-  "final_score": 4.5,
-  "score_delta": 2.0,
-  "new_submission_total_score": 9.5,
-  "submission_status": "GRADED",
-  "resolved_at": "2026-08-13T09:15:00Z"
-}
-```
-
----
-
-##### Contract 8: Auditor Three-Way View & Overrule (`PUT /api/v1/auditor/appeals/{id}/overrule`)
-* **Path:** `PUT /api/v1/auditor/appeals/d1112223-3344-5566-7788-99aabbccdde0/overrule`
-* **Headers:** `Authorization: Bearer <AUDITOR_JWT>`, `Content-Type: application/json`
-* **Request JSON Payload:**
-```json
-{
-  "overrule_score": 3.5,
-  "auditor_reason": "Thanh tra khao thi xac dinh sinh vien chua neu duoc chi so cosine distance, giam 1.0 diem so voi de xuat cua GV.",
-  "flag_for_quality_review": false
-}
-```
-* **Response Payload (200 OK):**
-```json
-{
-  "appeal_id": "d1112223-3344-5566-7788-99aabbccdde0",
-  "status": "AUDITOR_OVERRULED",
-  "previous_score": 4.5,
-  "final_score": 3.5,
-  "auditor_id": "aud_09876543",
-  "audit_log_id": "log_1122334455",
-  "resolved_at": "2026-08-13T10:00:00Z"
-}
-```
-
----
-
-##### Contract 9: Final Gradebook Freeze Sign-off (`POST /api/v1/auditor/exams/{id}/sign-off`)
-* **Path:** `POST /api/v1/auditor/exams/e5556667-7788-99aa-bbcc-ddeeff001122/sign-off`
-* **Headers:** `Authorization: Bearer <AUDITOR_JWT>`, `Content-Type: application/json`
-* **Request JSON Payload:**
-```json
-{
-  "sign_off_notes": "Khao thi da kiem tra 100% don khieu nai va doi soat 5 ca lech diem AI > 30%. Phe duyet bang diem chinh thuc.",
-  "sync_to_academic_portal": true
-}
-```
-* **Response Payload (200 OK):**
-```json
-{
-  "exam_id": "e5556667-7788-99aa-bbcc-ddeeff001122",
-  "status": "FROZEN",
-  "total_submissions_locked": 45,
-  "approved_by_auditor": "auditor.sarah@fpt.edu.vn",
-  "frozen_at": "2026-08-13T11:00:00Z"
-}
-```
-
----
-
 ## 3.2 Detailed Feature Specifications
 
 ### 3.2.1 FID-01 - User Login & Authentication / UC01 Role-based Login
@@ -1156,7 +892,7 @@ erDiagram
 | --- | --- |
 | **Use Case ID & Name** | `UC01` - Role-based Login |
 | **Date / Author / Version** | 12/08/2026 / Software Architecture Team / v1.2.0 |
-| **Actors** | All Users (Student, Teacher, System Admin, Examination Officer) |
+| **Actors** | All Users (Student, Teacher, System Admin) |
 | **Description** | Validates user credentials using email/password or Google OAuth2 SSO and redirects to role dashboard. |
 | **Precondition** | PRE-01: User account exists in database with status `ACTIVE`. |
 | **Trigger** | TRG-01: User enters credentials on Login screen and clicks "Login". |
@@ -1468,98 +1204,6 @@ flowchart TD
 
 ---
 
-### 3.2.7 FID-07 - Grade Appeal Lifecycle & Three-Way Examination Audit / UC83 - UC87
-
-#### Screen Mock-up
-`[UI Mockup - Left Blank]`
-
-#### Screen Definition Table
-
-| # | Field Name | Type | Mandatory | Max Length | Description |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Question Selector Dropdown | Dropdown | Yes | - | Selects question item to appeal (Max 3 items per exam attempt). |
-| 2 | Dispute Rationale Input Box | Text Area | Yes | 1000 | Detailed justification explaining why student believes grading is incorrect ($\ge$ 30 chars). |
-| 3 | Source Evidence Citation Picker | Chunk Picker / Text | No | 500 | Selects grounding Chunk from Notebook RAG or enters external citation URL. |
-| 4 | Adjudication Action Toggle | Button Group | Yes | - | Teacher decision toggle (`APPROVED` vs `REJECTED`). |
-| 5 | Revised Score Input | Number Input | Conditional| - | Points awarded (Must satisfy ${\text{original\_ai\_score}} \le \text{final\_score} \le \text{max\_score}$). |
-| 6 | Teacher Feedback Text Area | Text Area | Yes | 1000 | Mandatory teacher explanation ($\ge$ 20 chars). |
-| 7 | Three-Way Comparison Viewer | Split View Panel | Yes | - | Auditor side-by-side view (Student Text vs AI Evaluation vs Teacher Feedback). |
-| 8 | Auditor Overrule Button | Button | Conditional| - | Allows Examination Officer to overrule grade with mandatory audit logging. |
-
-#### Use Case Specification Table
-
-| Attribute | Specification Details |
-| --- | --- |
-| **Use Case ID & Name** | `UC83` - Submit Question Grade Appeal / `UC86` - Audit & Arbitrate Dispute |
-| **Date / Author / Version** | 13/08/2026 / Architecture & Examination Team / v1.3.0 |
-| **Actors** | Student, Teacher, Examination Officer |
-| **Description** | Human-in-the-loop dispute lifecycle allowing students to appeal grades within 48h, teachers to arbitrate without downside penalty, and Examination Officers to audit, overrule anomalies, and sign-off gradebooks. |
-| **Precondition** | PRE-01: Official exam score published $\le 48$ hours ago; student has not exceeded 3 appeals/exam or 1 appeal/question. |
-| **Trigger** | TRG-01: Student clicks "Appeal Question Grade" on result screen. |
-| **Post-Condition** | POS-01: `grade_appeals` record created, submission status set to `LOCKED_APPEAL`, immutable audit log registered. |
-
-##### Execution & Dispute Flowchart
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor S as Student
-    actor T as Teacher
-    participant SYS as EduAI Backend
-    actor E as Examination Officer
-
-    S->>SYS: POST /appeals (Reason >= 30 chars + Chunk Evidence)
-    SYS->>SYS: Lock Submission (status = LOCKED_APPEAL)
-    SYS-->>T: Push Notification (New Appeal in Workspace)
-    
-    alt Happy Path: Teacher Adjudicates within 72h
-        T->>SYS: POST /appeals/{id}/claim (status = UNDER_REVIEW)
-        T->>SYS: PUT /appeals/{id}/resolve (APPROVED / REJECTED + Feedback >= 20 chars)
-        SYS->>SYS: Recalculate total_score & Update ai_grading_results
-        SYS->>SYS: Unlock Submission (status = GRADED)
-        SYS-->>S: Real-time Notification (Appeal Resolved)
-    else SLA Breach (>72h Unresolved)
-        SYS->>SYS: Cron Worker tags ESCALATED_TO_AUDITOR
-        SYS-->>E: Alert Escalation on Auditor Dashboard
-        E->>SYS: PUT /auditor/appeals/{id}/overrule (Force Arbitrate)
-        SYS->>SYS: Register Immutable Audit Log & Unlock Submission
-    end
-
-    Note over T,E: Gradebook Finalization (Two-Man Rule)
-    T->>SYS: POST /exams/{id}/request-freeze
-    E->>SYS: Inspect AI Discrepancy Heatmap & Approve Final Sign-off
-    SYS->>SYS: Set Gradebook Status = FROZEN
-```
-
-##### Main Flow Steps
-
-| Step | Actor | Action Description |
-| --- | --- | --- |
-| 1 | Student | Opens Exam Result view within 48 hours of publication and clicks "Appeal Grade" on a question. |
-| 2 | Student | Enters reason ($\ge$ 30 chars), selects grounding Notebook Chunk or external reference text, and submits. |
-| 3 | System | Creates `grade_appeals` record with status `SUBMITTED` and sets `exam_submissions.status = 'LOCKED_APPEAL'`. |
-| 4 | Teacher | Opens class dispute queue, clicks "Claim" (`UNDER_REVIEW`), and inspects side-by-side student answer vs AI rationale vs evidence chunk. |
-| 5 | Teacher | Selects `APPROVED` (inputs new score $\ge \text{original\_ai\_score}$) or `REJECTED`, enters feedback ($\ge$ 20 chars), and clicks "Resolve". |
-| 6 | System | Updates `grade_appeals`, recalculates `exam_submissions.total_score`, updates student radar charts, and unlocks submission to `GRADED` if all disputes are resolved. |
-| 7 | Examination Officer | Monitors university-wide anomaly heatmap; inspects Three-Way View for any cases with score delta $>30\%$ or overdue $>72$h. |
-| 8 | Examination Officer | Executes binding overrule (`AUDITOR_OVERRULED`) if discrepancies are detected and signs off on final gradebook freeze (`FROZEN`). |
-
-#### Business Rules for Dispute & Auditing
-
-| # | Rule ID | Rule Description |
-| --- | --- | --- |
-| 1 | **BR-AP01** | **48-Hour Appeal Window:** Students can only file appeals within 48 hours of score publication. Feature locks automatically after 48h. |
-| 2 | **BR-AP02** | **Anti-Spam Quota:** Maximum 1 appeal per question and maximum 3 question appeals per exam submission attempt. |
-| 3 | **BR-AP03** | **Evidence & Justification Rule:** `student_reason` must have $\ge 30$ chars. Allows selecting Notebook Chunk ID or external citation. |
-| 4 | **BR-AP04** | **Zero-Downside Protection:** Resolved `final_score` must strictly satisfy ${\text{original\_ai\_score}} \le \text{final\_score} \le \text{question\_max\_score}$. Downward penalties are prohibited. |
-| 5 | **BR-AP05** | **Mandatory Feedback & Audit:** Adjudicators must provide $\ge 20$ chars feedback. Every score alteration writes an immutable record to `grade_dispute_audit_logs`. |
-| 6 | **BR-AP06** | **Individual Submission Lock:** Only the specific student's submission enters `LOCKED_APPEAL`. Class gradebook remains accessible with dispute badges. |
-| 7 | **BR-AP07** | **72-Hour SLA Escalation:** Appeals unhandled after 72 hours automatically escalate to Examination Officers for binding arbitration. |
-| 8 | **BR-AP08** | **AI Anomaly Flagging:** Exams with $\ge 20\%$ appeals or $> 30\%$ AI score discrepancy are flagged for mandatory auditor inspection. |
-| 9 | **BR-AP09** | **Two-Man Gradebook Freeze:** Official gradebooks require teacher freeze request followed by Examination Officer verified sign-off. |
-
----
-
 ## 4. Non-Functional Requirements
 
 ### 4.1 External Interfaces
@@ -1583,11 +1227,10 @@ sequenceDiagram
 
 ### 4.2 Quality Attributes
 
-#### 4.2.1 Security & Auditability:
+#### 4.2.1 Security:
 * **SEC-01 (PII Masking):** All student personally identifiable information (names, emails, student IDs) must be sanitized locally before payloads are sent to external AI provider APIs.
 * **SEC-02 (Prompt Injection Guard):** Student input fields in exam answer text boxes must be sanitized to prevent prompt injection attacks against LLM grading models.
 * **SEC-03 (JWT Token Security):** All client-to-backend communication must transmit a valid JWT token in the `Authorization: Bearer` header.
-* **SEC-04 (Immutable Audit Trail):** All dispute actions, score modifications, and arbitrator overrides must be written to append-only `grade_dispute_audit_logs` records.
 
 #### 4.2.2 Usability:
 * **USA-01 (Responsive Design):** Frontend UI must conform to modern responsive layout guidelines (TailwindCSS) adjusting seamlessly across desktop and tablet screen sizes.
@@ -1621,15 +1264,6 @@ sequenceDiagram
 | **BR-20** | Error Taxonomy Classification| AI grading must categorize essay errors into exact taxonomy: `CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC`. |
 | **BR-21** | Teacher Override Authority | Manual score overrides by teachers supersede AI-assigned marks and record an audit log entry. |
 | **BR-25** | PII Sanitization | Personal Identifiable Information (PII) must be stripped locally before sending context text to third-party LLMs. |
-| **BR-AP01** | 48h Appeal Window | Appeals allowed strictly within 48 hours of score publishing. |
-| **BR-AP02** | Anti-Spam Appeal Quotas | Max 1 appeal per question item; max 3 question appeals per student exam attempt. |
-| **BR-AP03** | Evidence & Reason Rule | Reason $\ge 30$ characters; supports Notebook Chunk ID or external text citation. |
-| **BR-AP04** | Zero-Downside Protection | Resolved score must satisfy ${\text{original\_ai\_score}} \le \text{final\_score} \le \text{question\_max\_score}$. |
-| **BR-AP05** | Mandatory Feedback Log | Feedback $\ge 20$ chars required; all score modifications write immutable audit log. |
-| **BR-AP06** | Individual Lock Boundary | Only the disputed student submission is locked (`LOCKED_APPEAL`); class gradebook remains accessible. |
-| **BR-AP07** | 72h SLA Escalation | Appeals unadjudicated after 72 hours automatically escalate to Examination Officers. |
-| **BR-AP08** | AI Anomaly Red Flag | Flagged when $\ge 20\%$ class appeals or $> 30\%$ single-item AI discrepancy occurs. |
-| **BR-AP09** | Two-Man Gradebook Sign-off | Final gradebook freeze requires teacher request and Examination Officer official sign-off. |
 
 ---
 
