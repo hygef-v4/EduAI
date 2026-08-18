@@ -295,7 +295,7 @@ flowchart LR
 | 79 | System Admin & Guardrails | View Exception & Error Logs | System Admin | **Description:** Inspect application logs, AI API timeouts, and execution error stack traces.<br>**Main Flow:** 1. Admin opens System Logs. 2. System renders log entries with filters. |
 | 80 | System Admin & Guardrails | Configure Maintenance Mode | System Admin | **Description:** Broadcast system announcements and toggle maintenance window states.<br>**Main Flow:** 1. Admin toggles maintenance mode. 2. System displays banner to users. |
 | 81 | System Admin & Guardrails | Backup Database Snapshots | System Admin | **Description:** Trigger maintenance tasks and vector database snapshot backups.<br>**Main Flow:** 1. Admin clicks Backup Database. 2. System triggers snapshot process. |
-| 82 | System Admin & Guardrails | Audit Performance & Latency | System Admin | **Description:** Monitor vector search latency and API response performance metrics.<br>**Main Flow:** 1. Admin views performance metrics. 2. System displays latency charts. |metrics. |
+| 82 | System Admin & Guardrails | Audit Performance & Latency | System Admin | **Description:** Monitor vector search latency and API response performance metrics.<br>**Main Flow:** 1. Admin views performance metrics. 2. System displays latency charts. |
 
 ---
 
@@ -562,7 +562,7 @@ erDiagram
 | --- | --- | --- | --- | --- | --- |
 | 1 | `id` | PK | UUID | Yes | Unique identifier of the question item. |
 | 2 | `question_bank_id`| FK | UUID | No | References `question_banks(id)` if saved to bank. |
-| 3 | `chunk_id` | FK | UUID | Yes | References `document_chunks(id)` for citation. |
+| 3 | `chunk_id` | FK | UUID | No | References `document_chunks(id)` for RAG citation. Nullable when source mode is `DIRECT_TOPIC_PROMPT`. |
 | 4 | `type` | - | String | Yes | Question item type (`MULTIPLE_CHOICE`, `TRUE_FALSE`, `SHORT_ESSAY`). |
 | 5 | `difficulty` | - | String | Yes | Difficulty level (`EASY`, `MEDIUM`, `HARD`, `EXPERT`). |
 | 6 | `prompt` | - | Text | Yes | The question prompt text. |
@@ -682,7 +682,7 @@ erDiagram
 
 ### 3.1.7 API Specification (API Doc)
 
-#### Master API Endpoints Catalog (32 REST APIs)
+#### Master API Endpoints Catalog (33 REST APIs)
 
 | # | HTTP Method | Endpoint Path | Module | Description | Allowed Roles |
 | --- | --- | --- | --- | --- | --- |
@@ -700,7 +700,7 @@ erDiagram
 | 12 | `POST` | `/api/v1/notebooks/{id}/documents/web` | Document RAG | Ingest web article text by URL | Teacher, Student |
 | 13 | `GET` | `/api/v1/documents/{id}/status` | Document RAG | Check text chunking & vector embedding status | All Roles |
 | 14 | `DELETE` | `/api/v1/documents/{id}` | Document RAG | Delete document and purge vector embeddings | Teacher, Student |
-| 15 | `POST` | `/api/v1/quiz/generate` | AI Quiz Gen | Generate RAG-backed quiz from Notebook documents | Teacher, Student |
+| 15 | `POST` | `/api/v1/quiz/generate` | AI Quiz Gen | Generate quiz from Notebook documents via RAG or from Direct Topic Prompt | Teacher, Student |
 | 16 | `GET` | `/api/v1/question-banks` | Question Bank | List available question banks | Teacher, Content Admin |
 | 17 | `POST` | `/api/v1/question-banks/{id}/questions` | Question Bank | Save verified question item to Question Bank | Teacher, Content Admin |
 | 18 | `PUT` | `/api/v1/questions/{id}` | Question Bank | Edit question prompt, options, or rubrics manually | Teacher, Content Admin |
@@ -718,6 +718,7 @@ erDiagram
 | 30 | `GET` | `/api/v1/admin/ai-providers` | System Admin | Get active LLM model providers & status | System Admin |
 | 31 | `PUT` | `/api/v1/admin/ai-providers/switch` | System Admin | Switch active AI provider engine (Gemini / Ollama) | System Admin |
 | 32 | `GET` | `/api/v1/admin/token-usage` | System Admin | Track daily token consumption & API costs | System Admin |
+| 33 | `POST` | `/api/v1/notebooks/{id}/documents/text` | Document RAG | Ingest direct text prompt or pasted notes into Notebook for chunking & vectorization | Teacher, Student |
 
 ---
 
@@ -758,7 +759,9 @@ erDiagram
 * **Request JSON Payload:**
 ```json
 {
+  "source_mode": "FROM_NOTEBOOK",
   "notebook_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "direct_prompt": null,
   "num_questions": 10,
   "question_types": ["MULTIPLE_CHOICE", "TRUE_FALSE", "SHORT_ESSAY"],
   "difficulty_distribution": {
@@ -768,6 +771,7 @@ erDiagram
   }
 }
 ```
+> **Note:** When `source_mode` = `DIRECT_TOPIC_PROMPT`, set `notebook_id` to `null` and provide `direct_prompt` string (30–5,000 chars).
 * **Response Payload (200 OK):**
 ```json
 {
@@ -1074,7 +1078,7 @@ sequenceDiagram
 
 | # | Rule Description |
 | --- | --- |
-| BR-10 | **Zero-Hallucination Citation:** Every AI-generated question item MUST attach a valid `chunk_id` and exact quote existing in the retrieved document chunks. |
+| BR-10 | **Zero-Hallucination Citation:** When source mode is `FROM_NOTEBOOK`, every AI-generated question item MUST attach a valid `chunk_id` and exact quote existing in the retrieved document chunks. In `DIRECT_TOPIC_PROMPT` mode, citations reference the user-provided prompt text instead. |
 | BR-11 | **Schema Validation Gate:** 100% of AI responses must validate against Draft-07 JSON Schema before persisting to database. |
 
 ---
@@ -1288,7 +1292,7 @@ flowchart TD
 | **BR-05** | Chunk Token Boundary | Document text chunking must strictly enforce 512 tokens maximum size with 10% overlap to preserve semantic context. |
 | **BR-06** | Upload Size Limit | Single document upload size is capped at 25MB maximum per file. |
 | **BR-07** | Direct Text Prompt Boundary | Direct text prompts and notes must be between 30 and 20,000 characters for document ingestion, or 30 and 5,000 characters for direct quiz generation. |
-| **BR-10** | Zero-Hallucination Citation | Every AI-generated question item MUST contain a verified, existing `chunk_id` and exact text quote. |
+| **BR-10** | Zero-Hallucination Citation | In `FROM_NOTEBOOK` mode, every AI-generated question item MUST contain a verified, existing `chunk_id` and exact text quote. In `DIRECT_TOPIC_PROMPT` mode, citations reference the user-provided prompt text. |
 | **BR-11** | Schema Compliance Gate | 100% of AI-generated JSON responses must validate against pre-defined Draft-07 JSON Schemas. |
 | **BR-15** | Timeout Auto-Submit | Exam attempts must auto-submit immediately when the exam countdown timer reaches zero. |
 | **BR-20** | Error Taxonomy Classification| AI grading must categorize essay errors into exact taxonomy: `CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC`. |
