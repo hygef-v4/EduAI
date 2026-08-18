@@ -9,8 +9,6 @@
 | **Course Code / Semester** | Capstone Project / PRM393 - Fall 2026 |
 | **Instructor / Mentor** | Lecturer / Supervisor Name |
 | **Group Number** | Group 5 |
-| **Team Leader** | Student Leader Name (Roll No: SE170001) |
-| **Team Members** | 1. Member Name 2 (Roll No: SE170002)<br>2. Member Name 3 (Roll No: SE170003)<br>3. Member Name 4 (Roll No: SE170004)<br>4. Member Name 5 (Roll No: SE170005) |
 | **Date & Location** | August 12, 2026 - Hanoi, Vietnam |
 
 ---
