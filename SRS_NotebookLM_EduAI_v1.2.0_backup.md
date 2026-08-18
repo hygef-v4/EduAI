@@ -32,8 +32,8 @@
 The **EduAI Intelligent Learning & Assessment Platform** is a Next-Generation AI-Powered EdTech system designed for high schools, universities, and educational centers. It combines **NotebookLM-style document RAG** (Retrieval-Augmented Generation), automated multi-format test generation, AI-powered multi-tier grading with error diagnostics, and interactive learning analytics.
 
 ### Core Areas of the Platform:
-1. **Knowledge Ingestion & Notebook RAG Engine:** Allows teachers and students to upload documents (PDF, DOCX, TXT, Web URLs) into subject-specific Notebooks. Text is chunked (512 tokens) and embedded using vector embeddings (`pgvector`) for accurate context retrieval.
-2. **AI-Powered Question & Test Generation:** Generates multi-format questions (Multiple Choice, True/False, Short Essay) directly linked to document chunks with explicit source citations.
+1. **Knowledge Ingestion & Notebook RAG Engine:** Allows teachers and students to upload documents (PDF, DOCX, TXT), paste direct text prompts/notes, or scrape Web URLs into subject-specific Notebooks. Text is chunked (512 tokens) and embedded using vector embeddings (`pgvector`) for accurate context retrieval.
+2. **AI-Powered Question & Test Generation:** Generates multi-format questions (Multiple Choice, True/False, Short Essay) sourced from Notebook document chunks via RAG or generated directly from user-provided text prompts/topics with explicit grounding citations.
 3. **Assessment & Exam Execution:** Timed examination environment with real-time auto-draft saving, question shuffling, and timeout auto-submission.
 4. **AI Automated Grading & Error Diagnostic Engine:** Combines exact-match auto-grading for objective items with LLM semantic evaluation for subjective essays. Provides root-cause error classification (`CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC`).
 5. **Analytics & Competency Dashboard:** Renders Skill Radar charts, Common Mistake Matrices, and class score distribution histograms.
@@ -46,37 +46,56 @@ The **EduAI Intelligent Learning & Assessment Platform** is a Next-Generation AI
 
 ```mermaid
 flowchart TB
-    subgraph ClientLayer ["Client Interface Layer"]
-        FE_Web["Web App (React / Next.js)"]
-        FE_Mobile["Mobile App (Flutter)"]
+    %% --- CLIENT LAYER ---
+    subgraph ClientLayer ["1. Client Interface Layer"]
+        FE_Web["Web Application Portal (React / Next.js + TailwindCSS)"]
     end
 
-    subgraph CorePlatform ["EduAI Central Platform (Spring Boot / Next.js Backend)"]
-        RAG["1. Document RAG Engine"]
-        QG["2. Question & Exam Engine"]
-        GR["3. AI Grading & Diagnostics Engine"]
-        AN["4. Analytics & Dashboard Subsystem"]
+    %% --- BACKEND GATEWAY & CORE PLATFORM ---
+    subgraph CorePlatform ["2. EduAI Central Platform (Spring Boot Backend)"]
+        direction TB
+        API_GW["REST API Gateway & Security (JWT / OAuth2)"]
+        
+        subgraph CoreEngines ["Core Business Engines"]
+            direction LR
+            RAG["1. Document RAG\nEngine"]
+            QG["2. Question & Exam\nEngine"]
+            GR["3. AI Grading &\nDiagnostics Engine"]
+            AN["4. Analytics &\nDashboard Subsystem"]
+            
+            RAG ~~~ QG ~~~ GR ~~~ AN
+        end
+        
+        API_GW --> RAG
+        API_GW --> QG
+        API_GW --> GR
+        API_GW --> AN
     end
 
-    subgraph ExternalServices ["External Infrastructure & AI Services"]
-        PG[("PostgreSQL DB\n(pgvector embeddings)")]
+    %% --- CLIENT TO GATEWAY ---
+    FE_Web --> API_GW
+
+    %% --- DATA & AI INFRASTRUCTURE ---
+    subgraph StorageLayer ["3. Database & Storage Layer"]
+        PG[("PostgreSQL Database\n(pgvector embeddings)")]
+    end
+
+    subgraph AIServices ["4. External AI & Execution Services"]
+        direction LR
         GEM["Google Gemini API\n(JSON Schema LLM)"]
         OLL["Local AI / Ollama\n(Fallback LLM)"]
         SB["Docker Sandbox\n(Phase 2 Deferred)"]
+        GEM ~~~ OLL ~~~ SB
     end
 
-    FE_Web --> RAG
-    FE_Web --> QG
-    FE_Web --> GR
-    FE_Web --> AN
-    FE_Mobile --> FE_Web
-
+    %% --- DATA & AI CONNECTIONS ---
     RAG <--> PG
     RAG <--> GEM
     QG <--> GEM
     QG <--> OLL
     GR <--> GEM
     GR <--> PG
+    AN <--> PG
     GR -.-> SB
 ```
 
@@ -203,14 +222,14 @@ flowchart LR
 | 6 | Account & Profile Management | Manage Class Members & Roles | Teacher | **Description:** View enrolled students, suspend access, or manage class roles.<br>**Main Flow:** 1. Teacher views member list. 2. Updates member status or role. |
 | 7 | Account & Profile Management | Check Storage Quotas & Token Limits | All Users | **Description:** View document upload storage usage and daily AI token quotas.<br>**Main Flow:** 1. User views settings/profile. 2. System queries usage logs. 3. Displays quota bar. |
 | 8 | Account & Profile Management | Reset Password & Configure 2FA | All Users | **Description:** Perform self-service password reset and setup 2FA authentication.<br>**Main Flow:** 1. User inputs email. 2. System sends OTP code. 3. User sets new password. |
-| 9 | Document & Knowledge RAG Engine | Upload Single Document File | Teacher, Student | **Description:** Ingest single learning materials in PDF, DOCX, TXT format.<br>**Main Flow:** 1. User drops PDF file. 2. Backend parses text into 512-token chunks. 3. Computes vector embeddings in Pgvector. |
+| 9 | Document & Knowledge RAG Engine | Upload Document File or Direct Text | Teacher, Student | **Description:** Ingest learning materials via file upload (PDF, DOCX, TXT) or direct text prompt/note pasting.<br>**Main Flow:** 1. User uploads file or pastes raw text/topic notes. 2. Backend parses text into 512-token chunks. 3. Computes vector embeddings in Pgvector. |
 | 10 | Document & Knowledge RAG Engine | Ingest Web Article Content via URL | Teacher, Student | **Description:** Extract and clean article text from web page URLs.<br>**Main Flow:** 1. User inputs URL string. 2. System scrapes text body. 3. Chunks and embeds text. |
 | 11 | Document & Knowledge RAG Engine | Monitor Vectorization Progress | All Users | **Description:** Track real-time progress bar of text chunking and vector embedding creation.<br>**Main Flow:** 1. User uploads document. 2. System streams progress percentage (0-100%). |
 | 12 | Document & Knowledge RAG Engine | Organize Notebook Folders | All Users | **Description:** Group uploaded documents into categorized Subject Notebooks.<br>**Main Flow:** 1. User creates notebook folder. 2. Assigns uploaded files to folder. |
 | 13 | Document & Knowledge RAG Engine | Share Notebook Access Permissions | All Users | **Description:** Grant notebook read/write access permissions to class members.<br>**Main Flow:** 1. User selects notebook. 2. Grants access role to class workspace. |
 | 14 | Document & Knowledge RAG Engine | Preview Document & Highlight Text | All Users | **Description:** Render parsed document text with interactive highlight markers.<br>**Main Flow:** 1. User opens document preview. 2. System highlights search chunk citations. |
 | 15 | Document & Knowledge RAG Engine | Delete Document & Purge Vectors | All Users | **Description:** Remove documents and permanently delete vector embeddings.<br>**Main Flow:** 1. User selects delete file. 2. System purges chunks and embeddings from Pgvector. |
-| 16 | AI Quiz & Question Generation | Generate Quiz from Notebook | Teacher, Student | **Description:** Synthesize multi-topic quizzes sourced from Notebook documents via RAG.<br>**Main Flow:** 1. User selects notebooks & count. 2. Vector search retrieves top-K chunks. 3. Gemini LLM generates JSON quiz. |
+| 16 | AI Quiz & Question Generation | Generate Quiz from Notebook or Topic Prompt | Teacher, Student | **Description:** Synthesize multi-topic quizzes sourced from Notebook RAG documents or user-provided topic prompts/raw text.<br>**Main Flow:** 1. User selects source mode (Notebook RAG or Direct Topic Prompt). 2. System retrieves relevant chunks or injects custom prompt context. 3. Gemini LLM generates structured JSON quiz. |
 | 17 | AI Quiz & Question Generation | Generate Multiple Choice Question | AI Engine | **Description:** Create 4-option MCQs with distractor explanations.<br>**Main Flow:** 1. RAG prompt sent to LLM. 2. LLM generates 1 correct key & 3 distractors. |
 | 18 | AI Quiz & Question Generation | Generate True / False Question | AI Engine | **Description:** Create binary True/False question items with contextual rationales.<br>**Main Flow:** 1. LLM evaluates chunk text. 2. Generates True/False prompt with explanation. |
 | 19 | AI Quiz & Question Generation | Generate Fill-in-the-Blank Question | AI Engine | **Description:** Create cloze test questions with exact and synonym key matches.<br>**Main Flow:** 1. LLM extracts key terms. 2. Replaces terms with blank markers. |
@@ -325,8 +344,8 @@ flowchart TD
 | 1 | Authentication | Login / Register | Initial entry screen for email/password and Google OAuth2 SSO authentication. |
 | 2 | Authentication | User Profile | Global interface for users to update profile details, avatar, and system preferences. |
 | 3 | Class Workspace | Class Dashboard | Central workspace view showing class members, assigned notebooks, and exam papers. |
-| 4 | Document RAG | Notebook View | Interface to upload PDF/DOCX/Web URLs, view chunking progress, and preview text. |
-| 5 | AI Question Gen | AI Quiz Studio | Generator screen to select notebooks, set difficulty mix, and generate questions. |
+| 4 | Document RAG | Notebook View | Interface to upload PDF/DOCX/TXT files, paste direct text prompts/notes, scrape Web URLs, and view chunking progress. |
+| 5 | AI Question Gen | AI Quiz Studio | Generator screen to select notebooks or input direct text/topic prompts, configure difficulty mix, and generate questions. |
 | 6 | Question Bank | Question Bank List | Centralized repository to view, edit, search, and organize verified question items. |
 | 7 | Exam Management | Exam Builder | Screen for teachers to assemble exam papers, set countdown timers, and schedule windows. |
 | 8 | Test Execution | Timed Exam Lobby & Screen | Student exam taking interface with countdown timer, LaTeX editor, and auto-save draft. |
@@ -922,7 +941,7 @@ erDiagram
 
 ---
 
-### 3.2.2 FID-02 - Document Ingestion & RAG Upload / UC09 Upload Document
+### 3.2.2 FID-02 - Document Ingestion & RAG Upload / UC09 Upload Document or Paste Text
 
 #### Screen Mock-up
 `[UI Mockup - Left Blank]`
@@ -932,33 +951,36 @@ erDiagram
 | # | Field Name | Type | Mandatory | Max Length | Description |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Target Notebook Dropdown | Dropdown | Yes | - | Selects the destination Notebook folder for document ingestion. |
-| 2 | File Upload Zone | File Picker | Yes | - | Drag-and-drop file upload zone accepting PDF, DOCX, TXT format (Max 25MB). |
-| 3 | Web Article URL Input | Text Input | No | 500 | URL string input box to scrape web article content directly into Notebook. |
-| 4 | Process Document Button | Button | Yes | - | Triggers document parsing, text chunking, and embedding worker. |
+| 2 | Ingestion Mode Tabs | Tab Group | Yes | - | Toggles ingestion mode (`FILE_UPLOAD`, `DIRECT_TEXT_PROMPT`, `WEB_URL`). |
+| 3 | File Upload Zone | File Picker | Conditional | - | Drag-and-drop file upload zone accepting PDF, DOCX, TXT format (Max 25MB). Active when Mode = `FILE_UPLOAD`. |
+| 4 | Direct Text Prompt / Note Box | Text Area | Conditional | 20,000 | Rich text area to paste raw text, lecture notes, syllabus, or topic outline directly. Active when Mode = `DIRECT_TEXT_PROMPT`. |
+| 5 | Web Article URL Input | Text Input | Conditional | 500 | URL string input box to scrape web article content directly into Notebook. Active when Mode = `WEB_URL`. |
+| 6 | Process & Vectorize Button | Button | Yes | - | Triggers document parsing, text chunking, and embedding worker. |
 
 #### Use Case Specification Table
 
 | Attribute | Specification Details |
 | --- | --- |
-| **Use Case ID & Name** | `UC09` - Upload Single Document File |
+| **Use Case ID & Name** | `UC09` - Upload Document File or Paste Direct Text |
 | **Date / Author / Version** | 12/08/2026 / Software Architecture Team / v1.2.0 |
 | **Actors** | Teacher, Student |
-| **Description** | Ingests learning document files (PDF, DOCX, TXT), parses text into 512-token chunks, and computes vector embeddings in Pgvector. |
+| **Description** | Ingests learning materials from files (PDF, DOCX, TXT), raw text notes/prompts, or web URLs, parses text into 512-token chunks, and computes vector embeddings in Pgvector. |
 | **Precondition** | PRE-01: User has created or holds read/write permission for target Notebook. |
-| **Trigger** | TRG-01: User drops a PDF file into Upload Zone and clicks "Process Document". |
-| **Post-Condition** | POS-01: Document is saved to storage, text is chunked into 512-token chunks with 1536-dim vector embeddings in Pgvector. |
+| **Trigger** | TRG-01: User selects file, enters URL, or pastes text prompt into Input Box and clicks "Process & Vectorize". |
+| **Post-Condition** | POS-01: Document/Text note is saved to storage, text is chunked into 512-token chunks with 1536-dim vector embeddings in Pgvector. |
 
 ##### Main Flow Steps
 
 | Step | Actor | Action Description |
 | --- | --- | --- |
-| 1 | User | Selects target Notebook and uploads PDF file. |
-| 2 | System | Receives file and saves metadata to `documents` table with status `PROCESSING`. |
-| 3 | System | Background Vectorization Worker parses document text. |
-| 4 | System | Chunks text using 512-token sliding window with 10% overlap. |
-| 5 | System | Invokes Embedding Model (Gemini / Local Ollama) to compute 1536-dim vectors. |
-| 6 | System | Saves vector embeddings and chunk text into `document_chunks` table. |
-| 7 | System | Updates document status to `COMPLETED`. |
+| 1 | User | Selects target Notebook and chooses ingestion mode (`FILE_UPLOAD`, `DIRECT_TEXT_PROMPT`, or `WEB_URL`). |
+| 2 | User | Drops document file, enters Web URL, or types/pastes text prompt ($\ge 30$ chars). |
+| 3 | System | Receives payload and saves metadata/content to `documents` table with status `PROCESSING`. |
+| 4 | System | Background Vectorization Worker parses document or raw text. |
+| 5 | System | Chunks text using 512-token sliding window with 10% overlap. |
+| 6 | System | Invokes Embedding Model (Gemini / Local Ollama) to compute 1536-dim vectors. |
+| 7 | System | Saves vector embeddings and chunk text into `document_chunks` table. |
+| 8 | System | Updates document status to `COMPLETED`. |
 
 #### Business Rules
 
@@ -966,10 +988,11 @@ erDiagram
 | --- | --- |
 | BR-05 | **Chunk Boundary Rule:** Document text chunks must strictly not exceed 512 tokens to maintain precision during RAG semantic search. |
 | BR-06 | **File Size Cap:** Maximum allowed file upload size per document is strictly 25MB. |
+| BR-07 | **Direct Text Length Limit:** Direct text prompts and notes must be between 30 and 20,000 characters. |
 
 ---
 
-### 3.2.3 FID-03 - AI Quiz Generation Studio / UC16 Generate Quiz from Notebook
+### 3.2.3 FID-03 - AI Quiz Generation Studio / UC16 Generate Quiz from Notebook or Topic Prompt
 
 #### Screen Mock-up
 `[UI Mockup - Left Blank]`
@@ -978,21 +1001,23 @@ erDiagram
 
 | # | Field Name | Type | Mandatory | Max Length | Description |
 | --- | --- | --- | --- | --- | --- |
-| 1 | Source Notebook Selector | Multi-Select | Yes | - | Selects one or multiple Notebooks as grounding knowledge source. |
-| 2 | Question Count Slider | Number Input| Yes | - | Selects number of questions to generate (5 to 50 items). |
-| 3 | Question Type Checkboxes| Checkboxes | Yes | - | Selects item types (`MULTIPLE_CHOICE`, `TRUE_FALSE`, `SHORT_ESSAY`). |
-| 4 | Generate Quiz Button | Button | Yes | - | Invokes RAG vector search and LLM Question Generation Engine. |
+| 1 | Generation Source Mode | Radio / Tab | Yes | - | Selects source input mode: `FROM_NOTEBOOK` (RAG from existing documents) vs `DIRECT_TOPIC_PROMPT` (Input custom text/topic prompt). |
+| 2 | Source Notebook Selector | Multi-Select | Conditional | - | Selects one or multiple Notebooks as grounding knowledge source. Mandatory if Source Mode = `FROM_NOTEBOOK`. |
+| 3 | Direct Topic / Text Prompt Area | Text Area | Conditional | 5,000 | Allows typing topic description, essay prompt, or pasting custom raw text for immediate quiz generation. Mandatory if Source Mode = `DIRECT_TOPIC_PROMPT` ($\ge 30$ chars). |
+| 4 | Question Count Slider | Number Input| Yes | - | Selects number of questions to generate (5 to 50 items). |
+| 5 | Question Type Checkboxes| Checkboxes | Yes | - | Selects item types (`MULTIPLE_CHOICE`, `TRUE_FALSE`, `SHORT_ESSAY`). |
+| 6 | Generate Quiz Button | Button | Yes | - | Invokes RAG vector search or Direct Prompt LLM Question Generation Engine. |
 
 #### Use Case Specification Table
 
 | Attribute | Specification Details |
 | --- | --- |
-| **Use Case ID & Name** | `UC16` - Generate Quiz from Notebook |
+| **Use Case ID & Name** | `UC16` - Generate Quiz from Notebook or Direct Topic Prompt |
 | **Date / Author / Version** | 12/08/2026 / Software Architecture Team / v1.2.0 |
 | **Actors** | Teacher, Student |
-| **Description** | Queries Pgvector for top-K relevant document chunks and invokes Gemini LLM via strict JSON Schema to generate grounded quiz items. |
-| **Precondition** | PRE-01: Target Notebook contains at least one processed document with valid vector embeddings. |
-| **Trigger** | TRG-01: User configures options and clicks "Generate Quiz". |
+| **Description** | Generates grounded quiz items by querying Pgvector for relevant document chunks (Notebook RAG mode) or injecting user-provided direct topic/text prompts directly into Gemini LLM via strict JSON Schema. |
+| **Precondition** | PRE-01: In `FROM_NOTEBOOK` mode, target Notebook contains at least one processed document. In `DIRECT_TOPIC_PROMPT` mode, prompt text length $\ge 30$ characters. |
+| **Trigger** | TRG-01: User configures source options, item count, question types, and clicks "Generate Quiz". |
 | **Post-Condition** | POS-01: A validated `GeneratedQuestionSet` JSON payload is created, verified against schema, and rendered on screen. |
 
 ##### Sequence & Execution Flow
@@ -1007,14 +1032,20 @@ sequenceDiagram
     participant LLM as Google Gemini API
     participant DB as System Database
 
-    User->>FE: Select Notebook & Options (Num questions, types)
-    FE->>BE: POST /api/v1/quiz/generate
-    BE->>PG: Hybrid Vector Search (BM25 + 1536-dim Embedding)
-    PG-->>BE: Return Top-K Grounding Chunks (512 tokens)
-    BE->>BE: Construct Prompt + Inject JSON Schema & Chunks
+    User->>FE: Select Source Mode (Notebook RAG vs Direct Prompt) & Options
+    FE->>BE: POST /api/v1/quiz/generate (source_mode, notebook_ids / direct_prompt, count, types)
+    
+    alt Source Mode = FROM_NOTEBOOK
+        BE->>PG: Hybrid Vector Search (BM25 + 1536-dim Embedding)
+        PG-->>BE: Return Top-K Grounding Chunks (512 tokens)
+        BE->>BE: Construct Prompt injecting Retrieved Chunks + JSON Schema
+    else Source Mode = DIRECT_TOPIC_PROMPT
+        BE->>BE: Sanitize Prompt & Construct Direct LLM Context + JSON Schema
+    end
+
     BE->>LLM: Call Gemini API (temperature = 0.2)
     LLM-->>BE: Stream Raw JSON Response
-    BE->>BE: Validation Gate (Schema & Chunk Citation Check)
+    BE->>BE: Validation Gate (Schema & Citation Verification)
     alt Validation Passed
         BE->>DB: Save Generated Questions & Options
         BE-->>FE: Return 200 OK + Question Set JSON
@@ -1031,12 +1062,12 @@ sequenceDiagram
 
 | Step | Actor | Action Description |
 | --- | --- | --- |
-| 1 | User | Selects Notebooks, item types, and question count. |
-| 2 | System | Backend executes hybrid search (BM25 + Pgvector dense search) over `document_chunks`. |
-| 3 | System | Retrieves Top-K relevant text chunks (512 tokens each). |
-| 4 | System | Constructs system prompt injecting JSON Schema and grounding context. |
+| 1 | User | Selects Source Mode (`FROM_NOTEBOOK` or `DIRECT_TOPIC_PROMPT`), item types, and question count. |
+| 2 | User | Selects target Notebooks OR enters custom topic prompt / pastes raw text ($\ge 30$ chars). |
+| 3 | System | In `FROM_NOTEBOOK` mode, backend executes hybrid search (BM25 + Pgvector) over `document_chunks` to retrieve Top-K chunks. In `DIRECT_TOPIC_PROMPT` mode, backend constructs prompt directly from user text. |
+| 4 | System | Constructs system prompt injecting JSON Schema and context material. |
 | 5 | System | Invokes Gemini API with `temperature = 0.2`. |
-| 6 | System | Validation Gate validates raw output JSON against schema and verifies chunk citations. |
+| 6 | System | Validation Gate validates raw output JSON against Draft-07 schema and verifies citations. |
 | 7 | System | Renders generated question set on UI for teacher review or direct student practice. |
 
 #### Business Rules
@@ -1256,6 +1287,7 @@ flowchart TD
 | **BR-03** | Class Join Code Uniqueness | Class workspace join codes must be unique 6-character alphanumeric strings generated by the system. |
 | **BR-05** | Chunk Token Boundary | Document text chunking must strictly enforce 512 tokens maximum size with 10% overlap to preserve semantic context. |
 | **BR-06** | Upload Size Limit | Single document upload size is capped at 25MB maximum per file. |
+| **BR-07** | Direct Text Prompt Boundary | Direct text prompts and notes must be between 30 and 20,000 characters for document ingestion, or 30 and 5,000 characters for direct quiz generation. |
 | **BR-10** | Zero-Hallucination Citation | Every AI-generated question item MUST contain a verified, existing `chunk_id` and exact text quote. |
 | **BR-11** | Schema Compliance Gate | 100% of AI-generated JSON responses must validate against pre-defined Draft-07 JSON Schemas. |
 | **BR-15** | Timeout Auto-Submit | Exam attempts must auto-submit immediately when the exam countdown timer reaches zero. |
