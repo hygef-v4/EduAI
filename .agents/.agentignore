@@ -1,0 +1,16 @@
+# Files and directories ignored by AI agents
+
+node_modules/
+.next/
+target/
+.mvn/
+*.class
+*.jar
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+Thumbs.db
+.git/
+pgdata/
