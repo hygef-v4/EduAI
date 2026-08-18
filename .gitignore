@@ -16,6 +16,7 @@ antigravity-engineer/
 .env
 .env.local
 *.log
+.claude/
 
 # Build & Output
 dist/
