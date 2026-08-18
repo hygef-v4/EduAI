@@ -17,9 +17,9 @@
 
 | Date | A*, M, D | In charge | Change Description |
 | --- | --- | --- | --- |
-| | | | |
-| | | | |
-| | | | |
+| 12/08/2026 | A | Software Architecture Team | Initial SRS draft (v1.0.0) covering 82 Use Cases, 16 Entities, 32 REST APIs, and Gemini RAG integration. |
+| 15/08/2026 | M | Software Architecture Team | v1.1.0: Removed mobile app references (focus strictly on Web Application), added Direct Text Prompt ingestion (UC09) and dual-mode Quiz Generation (UC16). |
+| 18/08/2026 | M | Software Architecture Team | v1.2.0: Synchronized technical architecture: Monorepo layout, Spring Boot Package by Layer, Next.js 14 App Router, 33 REST APIs, ADRs, and Docker Compose specifications. |
 
 *\*A - Added, M - Modified, D - Deleted*
 
@@ -301,9 +301,114 @@ flowchart LR
 
 ## 3. Software Features & Technical Architecture
 
-### 3.1 Functional Overview & System Architecture
+### 3.1 System Architecture & Project Organization
 
-#### 3.1.1 Screens Flow Diagram
+#### 3.1.1 Monorepo Project Structure
+
+The EduAI codebase is organized as a unified **Monorepo** containing frontend, backend, documentation, and local infrastructure configuration:
+
+```
+EduAI/
+├── docs/                              # Project specifications & architecture docs
+│   ├── SRS_NotebookLM_EduAI_v1.2.0.md
+│   └── api-contracts/                 # JSON schema contracts
+│
+├── frontend/                          # Next.js 14 Web Application
+│   ├── public/                        # Static assets (images, fonts)
+│   ├── src/
+│   │   ├── app/                       # Next.js App Router (Layouts & Pages)
+│   │   │   ├── (auth)/                # Route group: login, register
+│   │   │   ├── (dashboard)/           # Protected pages: workspace, notebook, quiz, exam, analytics, admin
+│   │   │   ├── layout.tsx             # Root layout & providers
+│   │   │   └── globals.css            # TailwindCSS styles
+│   │   ├── components/                # Reusable UI components by feature
+│   │   │   ├── ui/                    # Base atoms: Button, Input, Modal, Card
+│   │   │   ├── auth/                  # LoginForm, RegisterForm
+│   │   │   ├── notebook/              # FileUploader, TextPromptBox, ChunkProgress
+│   │   │   ├── quiz/                  # QuizConfig, QuestionCard, SourceCitation
+│   │   │   ├── exam/                  # CountdownTimer, QuestionPalette, LaTeXEditor
+│   │   │   ├── grading/               # ScoreOverviewCard, DiagnosticBox, OverrideModal
+│   │   │   └── analytics/             # SkillRadarChart, MistakeMatrixGrid, ScoreHistogram
+│   │   ├── hooks/                     # Custom React hooks (useAuth, useAutoSave, useCountdown)
+│   │   ├── services/                  # Axios REST API client services
+│   │   ├── types/                     # TypeScript domain interfaces & DTOs
+│   │   └── lib/                       # Utility helpers & constants
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   └── package.json
+│
+├── backend/                            # Spring Boot 3.3 (Java 21) REST Backend
+│   ├── src/main/java/com/eduai/
+│   │   ├── EduAiApplication.java       # Spring Boot main entry
+│   │   ├── config/                     # Security, CORS, Gemini/Ollama, Async configs
+│   │   ├── controller/                 # REST Controllers (33 REST endpoints)
+│   │   ├── service/                    # Business Logic Layer (Auth, Workspace, RAG, Quiz, Grading, Analytics)
+│   │   ├── repository/                 # Spring Data JPA Repositories + pgvector native queries
+│   │   ├── entity/                     # JPA Entities (16 database tables)
+│   │   ├── dto/                        # Request/Response Data Transfer Objects
+│   │   ├── enums/                      # Domain enums (UserRole, QuestionType, SourceMode, ErrorCategory)
+│   │   ├── security/                   # JWT Token Provider, Auth Filter, PII Sanitizer
+│   │   ├── ai/                         # GeminiClient, OllamaClient, LlmRouter, PromptTemplates, JsonSchemaValidator
+│   │   ├── worker/                     # Async workers (VectorizationWorker, AutoGradingWorker)
+│   │   └── exception/                  # GlobalExceptionHandler, Custom API exceptions
+│   ├── src/main/resources/
+│   │   ├── application.yml             # Main Spring configuration
+│   │   └── db/migration/              # Flyway SQL migrations (V1__... to V9__seed_demo_data.sql)
+│   ├── pom.xml                        # Maven build configuration
+│   └── Dockerfile
+│
+├── docker-compose.yml                 # Multi-container local orchestration (PostgreSQL + Backend + Frontend)
+├── .env.example                       # Environment variables template
+├── .gitignore
+└── README.md
+```
+
+#### 3.1.2 Technical Stack & Layer Architecture
+
+| Layer / Subsystem | Primary Technology | Rationale & Responsibility |
+| --- | --- | --- |
+| **Frontend Framework** | Next.js 14 (App Router) + TypeScript | React Server Components, high SEO/performance, robust routing. |
+| **Styling & Icons** | TailwindCSS + Lucide React | Modern responsive design across desktop/tablet without heavy CSS overhead. |
+| **Client State & API** | TanStack Query v5 + Axios | Automatic caching, background re-fetching, optimistic updates for draft saving. |
+| **Math & Rich Text** | KaTeX + Tiptap / MathJax | High-speed client-side LaTeX formula rendering and essay editing. |
+| **Backend Framework** | Spring Boot 3.3 (Java 21) | Mature enterprise MVC, high throughput, robust security and type safety. |
+| **Security & Auth** | Spring Security + JJWT (HMAC-SHA256) | Stateless token-based auth, role-based endpoint authorization. |
+| **Database & ORM** | PostgreSQL 16 + `pgvector` + Hibernate | Single relational DB for business data and 1536-dim vector embeddings. |
+| **DB Migration** | Flyway | Versioned SQL scripts guaranteeing deterministic schema state. |
+| **Primary AI Engine** | Google Gemini API (Gemini 2.0 Flash) | Native JSON Schema structured output, fast RAG reasoning and essay grading. |
+| **Fallback AI Engine** | Local Ollama (Qwen 2.5 / Llama 3) | Low-latency local LLM fallback when external API times out. |
+| **Async Workers** | Spring `@Async` + TaskExecutor | Non-blocking document vectorization and auto-grading background queues. |
+
+#### 3.1.3 Architectural Decision Records (ADRs)
+
+| ADR ID | Decision Title | Selected Solution | Key Rationale |
+| --- | --- | --- | --- |
+| **ADR-01** | Repository Architecture | Monorepo Structure | Simplifies CI/CD, shared `.env` configuration, and synchronized PR reviews for capstone team. |
+| **ADR-02** | Backend Code Organization | Package by Layer | Clear separation of concerns (controller, service, repository, entity), easy for team members to navigate. |
+| **ADR-03** | Database Migration Strategy | Flyway Versioned Migrations | Ensures automated, reproducible DB setup across local, test, and defense environments. |
+| **ADR-04** | AI Resilience & Fallback | `LlmRouter` Pattern | Transparently falls back to local Ollama when Gemini API encounters latency spikes or rate limits. |
+| **ADR-05** | Vector Storage Architecture | In-DB `pgvector` Extension | Eliminates need for separate vector DB (e.g., Pinecone); enables transactional integrity with relational tables. |
+| **ADR-06** | Document Ingestion Versatility | Dual Ingestion (File + Direct Text) | Allows teachers to upload PDF/DOCX or directly paste syllabus/text prompts without preparing files. |
+| **ADR-07** | Client Data Synchronization | TanStack Query Cache | Eliminates manual state boilerplate; handles automatic retries and 10s draft syncing silently. |
+
+#### 3.1.4 Module & Feature-to-Code Mapping Matrix
+
+| SRS Feature Module | Use Case Range | Spring Boot Backend Package | Next.js Frontend Route | API Endpoints |
+| --- | --- | --- | --- | --- |
+| **Account & Auth** | `UC001` – `UC008` | `controller/AuthController`<br>`service/AuthService` | `/login`, `/register`, `/profile` | #1 – #4 |
+| **Class Workspace** | `UC004` – `UC006` | `controller/WorkspaceController`<br>`service/WorkspaceService` | `/workspace/[id]` | #5 – #8 |
+| **Document RAG** | `UC009` – `UC015` | `controller/DocumentController`<br>`service/VectorizationService` | `/workspace/[id]/notebook/[id]` | #9 – #14, #33 |
+| **AI Quiz Studio** | `UC016` – `UC026` | `controller/QuizController`<br>`service/QuizGenerationService` | `/quiz-studio` | #15 |
+| **Question Bank** | `UC027` – `UC029` | `controller/QuestionBankController`<br>`service/QuestionBankService` | `/quiz-studio` (Bank Tab) | #16 – #18 |
+| **Exam Management** | `UC030` – `UC039` | `controller/ExamController`<br>`service/ExamService` | `/exam/builder`, `/exam/lobby/[id]` | #19 – #20 |
+| **Test Execution** | `UC040` – `UC051` | `controller/SubmissionController`<br>`service/SubmissionService` | `/exam/room/[id]` | #21 – #23 |
+| **AI Grading & Diagnostics** | `UC052` – `UC062` | `controller/SubmissionController`<br>`service/GradingService` | `/results/[submissionId]` | #24 – #25 |
+| **Analytics Dashboard** | `UC063` – `UC073` | `controller/AnalyticsController`<br>`service/AnalyticsService` | `/analytics` | #26 – #29 |
+| **System Admin & AI Config**| `UC074` – `UC082` | `controller/AdminController`<br>`service/AdminService` | `/admin` | #30 – #32 |
+
+---
+
+#### 3.1.5 Screens Flow Diagram
 
 ```mermaid
 flowchart TD
@@ -337,7 +442,7 @@ flowchart TD
     ResultView --> Analytics
 ```
 
-#### 3.1.2 Screen Descriptions
+#### 3.1.6 Screen Descriptions
 
 | # | Feature Area | Screen Name | Description |
 | --- | --- | --- | --- |
@@ -355,7 +460,7 @@ flowchart TD
 
 ---
 
-#### 3.1.3 Screen Authorization Matrix
+#### 3.1.7 Screen Authorization Matrix
 
 | # | Screen / Feature Action | Student | Teacher | Content Admin | System Admin |
 | --- | --- | :---: | :---: | :---: | :---: |
@@ -374,7 +479,7 @@ flowchart TD
 
 ---
 
-#### 3.1.4 Non-Screen System Functions
+#### 3.1.8 Non-Screen System Functions
 
 | # | Feature Module | System Function Name | Description |
 | --- | --- | --- | --- |
@@ -385,7 +490,7 @@ flowchart TD
 
 ---
 
-### 3.1.5 Entity Relationship Diagram & Entity Descriptions
+### 3.1.9 Entity Relationship Diagram & Entity Descriptions
 
 ```mermaid
 erDiagram
@@ -493,7 +598,7 @@ erDiagram
 
 ---
 
-### 3.1.6 Entity Details (Database Design Specification)
+### 3.1.10 Entity Details (Database Design Specification)
 
 #### 1. Entity: `users`
 
@@ -680,7 +785,7 @@ erDiagram
 
 ---
 
-### 3.1.7 API Specification (API Doc)
+### 3.1.11 API Specification (API Doc)
 
 #### Master API Endpoints Catalog (33 REST APIs)
 
@@ -1308,11 +1413,66 @@ flowchart TD
 
 ---
 
-### 5.3 Other Requirements
-* **Git Architecture:** Feature branch workflow (`feature/rag-engine`, `feature/exam-builder`) with pull-request review gates.
-* **State Management:** React components enforce unidirectional data flow using standard React Context / TanStack Query.
-* **Automated Testing:** 85%+ unit & integration test coverage required for all Spring Boot backend REST endpoints before code merge.
-* **Database Seeding:** PostgreSQL vector database pre-seeded with baseline demo data (1 Admin, 5 Teachers, 50 Students, 10 Notebooks, 5 Exam Papers) prior to project defense.
+### 5.4 Containerization & Local Infrastructure (Docker Compose)
+
+For local development and Capstone defense demonstrations, the complete system is orchestrated using Docker Compose:
+
+```yaml
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: eduai-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: eduai
+      POSTGRES_USER: eduai_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U eduai_user -d eduai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: eduai-backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/eduai
+      SPRING_DATASOURCE_USERNAME: eduai_user
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-postgres123}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-DefaultSecretKeyForEduAIJwtTokenGenerationMustBe256BitsLong!}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: eduai-frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+```
 
 ---
 
