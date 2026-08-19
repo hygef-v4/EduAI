@@ -16,7 +16,7 @@
 | State Management | TanStack Query | v5 | Automatic caching, background re-fetch |
 | HTTP Client | Axios | Latest | Interceptors for JWT, response transform |
 | Database | PostgreSQL | 16 | Relational + pgvector in single instance |
-| Vector Extension | pgvector | Latest | 1536-dim embeddings, HNSW index |
+| Vector Extension | pgvector | Latest | 768-dim embeddings (text-embedding-004), HNSW index |
 | DB Migration | Flyway | Latest | SQL-based, deterministic |
 | Build Tool | Maven | 3.9+ | Standard Java build tool |
 | Package Manager | npm | 10+ | Node.js package management |

@@ -18,7 +18,7 @@
 - **FR-ADM-01**: Admin can retrieve and update active AI provider (`GEMINI_2_FLASH` $\leftrightarrow$ `OLLAMA_LOCAL`) at runtime without restarting the server.
 - **FR-ADM-02**: System logs prompt tokens, completion tokens, and estimated USD cost for every AI invocation in `token_usage_logs`.
 - **FR-ADM-03**: Endpoint `/admin/ai/token-usage` returns aggregated token and cost trends over 7d, 30d, 90d periods.
-- **FR-ADM-04**: Enforce role-based daily token rate limits (`BR-26`).
+- **FR-ADM-04**: Enforce role-based daily token rate limits (`BR-26`), resetting at `00:00:00 GMT+7` daily and returning `429 Too Many Requests` on violation.
 
 ## 4. Data Model & Entities
 - **Tables**: `token_usage_logs` (`id`, `user_id`, `provider`, `prompt_tokens`, `completion_tokens`, `cost_usd`, `created_at`).

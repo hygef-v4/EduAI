@@ -27,7 +27,7 @@ You are a Principal Software Architect and Senior Engineer specialized in:
 
 ## 3. Reference Shortcuts
 
-- **Technical Constitution**: [.sdd/constitution.md](file:.sdd/constitution.md)
-- **API Contracts**: [.sdd/shared_context.md](file:.sdd/shared_context.md)
-- **Business Rules**: [.sdd/constraints/business.md](file:.sdd/constraints/business.md)
+- **Technical Constitution**: [.sdd/constitution.md](.sdd/constitution.md)
+- **API Contracts**: [.sdd/shared_context.md](.sdd/shared_context.md)
+- **Business Rules**: [.sdd/constraints/business.md](.sdd/constraints/business.md)
 - **Feature Specs**: `.sdd/specs/feat-*/SPEC.md`

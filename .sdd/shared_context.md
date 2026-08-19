@@ -35,11 +35,11 @@
 
 ---
 
-## 2. Complete 33 REST API Catalog
+## 2. Complete 35 REST API Catalog
 
 | # | Method | Endpoint Path | Module | Request Body / Params | Response Data | Allowed Roles |
 |---|---|---|---|---|---|---|
-| **1** | `POST` | `/auth/register` | Auth | `{ email, password, full_name, role }` | `{ user: { id, email, full_name, role }, token }` | Public |
+| **1** | `POST` | `/auth/register` | Auth | `{ email, password, full_name, role: "STUDENT"|"TEACHER" }` | `{ user: { id, email, full_name, role }, token }` | Public |
 | **2** | `POST` | `/auth/login` | Auth | `{ email, password }` | `{ user: { id, email, full_name, role }, token }` | Public |
 | **3** | `GET` | `/auth/me` | Auth | None | `{ id, email, full_name, role, avatar_url }` | All Roles |
 | **4** | `PUT` | `/users/profile` | Auth | `{ full_name, avatar_url }` | `{ id, email, full_name, avatar_url }` | All Roles |
@@ -55,14 +55,14 @@
 | **14** | `GET` | `/notebooks/{id}/documents` | Document RAG | None | `List<DocumentDTO>` | All Roles |
 | **15** | `POST` | `/quiz/generate` | AI Quiz Studio | `{ source_mode, notebook_id?, topic_prompt?, question_count, difficulty_distribution, formats }` | `List<GeneratedQuestionDTO>` | All Roles |
 | **16** | `POST` | `/question-banks` | Question Bank | `{ name, subject_code, workspace_id }` | `{ id, name, workspace_id }` | Teacher, Admin |
-| **17** | `POST` | `/question-banks/{id}/items` | Question Bank | `{ question_type, prompt, answer_key, options, rubric, chunk_id? }` | `QuestionItemDTO` | Teacher, Admin |
+| **17** | `POST` | `/question-banks/{id}/items` | Question Bank | `{ topic, question_type, prompt, answer_key, options, rubric, chunk_id? }` | `QuestionItemDTO` | Teacher, Admin |
 | **18** | `GET` | `/question-banks/{id}/items` | Question Bank | `?type=MCQ&difficulty=MEDIUM` | `Page<QuestionItemDTO>` | Teacher, Admin |
 | **19** | `POST` | `/exams` | Exam Paper | `{ title, workspace_id, duration_minutes, exam_mode, start_time, end_time, items: [{ question_id, point_weight }] }` | `ExamPaperDTO` | Teacher, Admin |
 | **20** | `GET` | `/exams/{id}` | Exam Paper | None | `ExamPaperDetailDTO` | All Roles |
 | **21** | `POST` | `/exams/{id}/start` | Test Execution | None | `{ submission_id, exam: { title, duration_minutes }, questions: [...] }` | Student |
-| **22** | `PUT` | `/submissions/{id}/draft` | Test Execution | `{ answers: [{ question_id, selected_option_id?, text_answer? }] }` | `{ saved_at, synced_count }` | Student |
-| **23** | `POST` | `/exams/{id}/submit` | Test Execution | `{ answers: [...] }` | `{ submission_id, status: "SUBMITTED", total_score }` | Student |
-| **24** | `GET` | `/submissions/{id}/result` | AI Grading | None | `SubmissionResultDTO` (with scores, AI rationales, error categories) | All Roles |
+| **22** | `PUT` | `/submissions/{id}/draft` | Test Execution | `{ answers: [{ question_id, selected_option_id?, text_answer? }], tab_switch_count }` | `{ saved_at, synced_count }` | Student |
+| **23** | `POST` | `/exams/{id}/submit` | Test Execution | `{ answers: [...] }` | `{ submission_id, status: "SUBMITTED"|"GRADING_IN_PROGRESS", total_score }` | Student |
+| **24** | `GET` | `/submissions/{id}/result` | AI Grading | None | `SubmissionResultDTO` (status, scores, AI rationales, error categories, pending states) | All Roles |
 | **25** | `POST` | `/grading/{result_id}/override` | AI Grading | `{ score_override, teacher_feedback, override_reason }` | `GradingResultDTO` | Teacher, Admin |
 | **26** | `GET` | `/analytics/student/me` | Analytics | None | `StudentAnalyticsDTO` (GPA velocity, completed exams) | Student |
 | **27** | `GET` | `/analytics/student/radar` | Analytics | `?workspace_id={id}` | `SkillRadarDTO` (`topic`, `score_percentage`, `mastery_level`) | Student, Teacher |
@@ -72,3 +72,5 @@
 | **31** | `PUT` | `/admin/ai/config` | Admin | `{ active_provider, gemini_model, ollama_model }` | `{ status: "UPDATED", active_provider }` | System Admin |
 | **32** | `GET` | `/admin/ai/token-usage` | Admin | `?range=30d` | `List<TokenUsageSummaryDTO>` | System Admin |
 | **33** | `DELETE`| `/documents/{id}` | Document RAG | None | `{ status: "PURGED", deleted_chunks_count }` | Teacher, Admin |
+| **34** | `POST` | `/auth/logout` | Auth | None | `{ message: "Logged out successfully" }` | Authenticated |
+| **35** | `POST` | `/question-banks/{id}/items/batch` | Question Bank | `{ items: [{ topic, question_type, prompt, answer_key, options, rubric, chunk_id? }] }` | `List<QuestionItemDTO>` | Teacher, Admin |

@@ -25,6 +25,8 @@
   - Vietnamese Student ID pattern: `[A-Z]{2}[0-9]{6,8}` $\rightarrow$ replaced with `[STUDENT_ID]`.
   - Email pattern: `[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}` $\rightarrow$ replaced with `[USER_EMAIL]`.
   - Phone number pattern: `(0|\+84)[0-9]{9,10}` $\rightarrow$ replaced with `[PHONE]`.
+- **SSRF URL Validation**:
+  - Scrape URL endpoint must strictly reject private IP ranges (RFC 1918: `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), loopback (`127.0.0.1`, `localhost`), link-local (`169.254.0.0/16`), and non-HTTP/HTTPS protocols (`file://`, `ftp://`).
 
 ## 3. Secret & Credential Safety
 

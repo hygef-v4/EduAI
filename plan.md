@@ -10,7 +10,7 @@
 - [x] Write `.sdd/constraints/global.md` (tech stack, naming conventions, standards)
 - [x] Write `.sdd/constraints/business.md` (BR-01 through BR-26 rules)
 - [x] Write `.sdd/constraints/safety.md` (no destructive DDL, prompt safety, PII regex)
-- [x] Write `.sdd/shared_context.md` (33 REST API contract definitions)
+- [x] Write `.sdd/shared_context.md` (35 REST API contract definitions)
 - [x] Write Architectural Decision Records (ADR-001 through ADR-007)
 - [x] Write Domain Skills (`rag-optimization.md`, `error-diagnostics.md`)
 - [x] Create `AGENTS.md` and `.agents/.agentignore`

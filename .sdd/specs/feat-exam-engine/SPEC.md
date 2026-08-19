@@ -14,14 +14,14 @@
 ## 2. Functional Requirements
 - **FR-EXAM-01**: Teachers assemble exam papers with items, point weights, duration minutes, and availability window (`UC030`).
 - **FR-EXAM-02**: Students start an attempt (`POST /exams/{id}/start`) which creates an `exam_submissions` record with start timestamp.
-- **FR-EXAM-03**: Client silently syncs draft answers every 10s via `PUT /submissions/{id}/draft` (`BR-14`).
+- **FR-EXAM-03**: Client silently syncs draft answers and `tab_switch_count` every 10s via `PUT /submissions/{id}/draft` (`BR-14`). Sync is rejected (`409 Conflict`) if submission is no longer `IN_PROGRESS`.
 - **FR-EXAM-04**: Client includes rich KaTeX math editor for essay questions (`USA-02`).
-- **FR-EXAM-05**: When timer hits `00:00:00`, inputs lock and current draft is auto-submitted (`BR-15`).
+- **FR-EXAM-05**: When timer hits `00:00:00`, inputs lock and current draft is auto-submitted. Server applies a 60s network grace period (`BR-15`).
 - **FR-EXAM-06**: Client logs window blur/tab switch events; $>3$ infractions triggers auto-submission (`BR-16`).
 
 ## 3. Data Model & Entities
-- **Tables**: `exam_papers`, `exam_items`, `exam_submissions` (`status`: `IN_PROGRESS | SUBMITTED | GRADED`), `submission_answers`.
-- **DTOs**: `CreateExamDTO`, `ExamPaperDTO`, `StartExamResponseDTO`, `DraftSyncDTO`, `SubmitExamDTO`.
+- **Tables**: `exam_papers`, `exam_items`, `exam_submissions` (`status`: `IN_PROGRESS | SUBMITTED | GRADING_IN_PROGRESS | GRADED`, `version` for optimistic locking, `tab_switch_count`), `submission_answers`.
+- **DTOs**: `CreateExamDTO`, `ExamPaperDTO`, `StartExamResponseDTO`, `DraftSyncDTO` (`answers`, `tab_switch_count`), `SubmitExamDTO`.
 
 ## 4. Error Handling
 | Scenario | Expected Behavior | HTTP Status |
@@ -32,4 +32,6 @@
 
 ## 5. BDD Acceptance Criteria
 - **Given** an exam with 30 min duration, **When** student starts, **Then** return submission ID with countdown deadline.
-- **Given** active exam, **When** countdown reaches zero, **Then** backend accepts submission with status `SUBMITTED`.
+- **Given** active exam, **When** countdown reaches zero, **Then** backend accepts submission with status `SUBMITTED` within the 60-second grace window.
+- **Given** a student exceeds 3 tab switches during `OFFICIAL_EXAM`, **When** the 4th switch event is synced via `PUT /submissions/{id}/draft`, **Then** backend immediately sets `status = SUBMITTED` and returns `409` to further draft syncs.
+- **Given** a submission in `SUBMITTED` state, **When** client calls `PUT /submissions/{id}/draft`, **Then** server responds `409 Conflict`.

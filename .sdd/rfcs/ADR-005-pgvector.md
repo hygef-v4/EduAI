@@ -3,7 +3,7 @@
 ## Status: APPROVED
 
 ## Context
-The RAG engine requires storing and searching 1536-dimensional vector embeddings of document chunks. A separate dedicated vector database (e.g. Pinecone, Milvus, Qdrant) adds operational complexity and breaks ACID transactional consistency with relational metadata.
+The RAG engine requires storing and searching 768-dimensional vector embeddings of document chunks (Google text-embedding-004 & Ollama nomic-embed-text). A separate dedicated vector database (e.g. Pinecone, Milvus, Qdrant) adds operational complexity and breaks ACID transactional consistency with relational metadata.
 
 ## Decision
 Use **PostgreSQL 16 with the `pgvector` extension** directly within the primary application database.

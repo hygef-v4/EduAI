@@ -13,14 +13,14 @@
 
 ## 2. Functional Requirements
 - **FR-GRADE-01**: Exact-match auto-grading runs immediately upon exam submission for MCQ and True/False items (`BR-22`).
-- **FR-GRADE-02**: `AutoGradingWorker` asynchronously grades short essay answers using Gemini 2.0 Flash against stored rubrics and reference chunks.
-- **FR-GRADE-03**: AI grading classifies essay errors into exact 5 categories: `CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC` (`BR-20`).
+- **FR-GRADE-02**: `AutoGradingWorker` asynchronously grades short essay answers using Gemini 2.0 Flash against stored rubrics and reference chunks. Submission transitions to `GRADING_IN_PROGRESS` then `GRADED`.
+- **FR-GRADE-03**: AI grading classifies essay errors into exact categories: `CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC`, or `NONE` (when 100% correct) (`BR-20`).
 - **FR-GRADE-04**: Teachers can override any AI-assigned score with documented reason and audit logging (`BR-21`, API #25).
-- **FR-GRADE-05**: Student result screen renders scores, item breakdown, AI reasoning, and source citations (`UC051`).
+- **FR-GRADE-05**: Student result screen renders scores, item breakdown, AI reasoning, and source citations (`UC051`). In-progress essays return `status: "PENDING"` enabling client polling every 3s.
 
 ## 3. Data Model & Entities
 - **Tables**: `ai_grading_results` (`score_awarded`, `max_score`, `feedback_text`, `error_category`, `is_overridden`, `overridden_by`, `override_reason`), `mistake_logs`.
-- **DTOs**: `SubmissionResultDTO`, `GradingResultDTO`, `TeacherOverrideDTO`.
+- **DTOs**: `SubmissionResultDTO` (`submission_id`, `status`, `total_score`, `graded_items: [...]`), `GradingResultDTO`, `TeacherOverrideDTO`.
 
 ## 4. Error Handling
 | Scenario | Expected Behavior | HTTP Status |
@@ -30,3 +30,5 @@
 
 ## 5. BDD Acceptance Criteria
 - **Given** an exam submission with 5 MCQs and 1 Essay, **When** submitted, **Then** MCQs are graded in $< 100\text{ms}$ and essay evaluation completes with a valid `error_category` tag.
+- **Given** an essay answer that is 100% correct, **When** `AutoGradingWorker` evaluates it, **Then** `error_category = 'NONE'` and `score_awarded = max_score`.
+- **Given** an essay submission, **When** the grading worker is running, **Then** `GET /submissions/{id}/result` returns `status: "PENDING"` for the essay item until `GRADED`.

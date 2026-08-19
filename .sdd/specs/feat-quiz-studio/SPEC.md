@@ -3,7 +3,7 @@
 > **Feature Module**: `feat-quiz-studio`  
 > **Status**: `Approved`  
 > **Use Cases Covered**: `UC016` (Dual Mode Gen), `UC017` (MCQ Gen), `UC018` (True/False Gen), `UC019` (Essay Gen), `UC020` (Citation Verification), `UC027` (Question Bank), `UC028` (Edit Item), `UC029` (Save to Bank)  
-> **API Endpoints**: #15 (`POST /quiz/generate`), #16 (`POST /question-banks`), #17 (`POST /question-banks/{id}/items`), #18 (`GET /question-banks/{id}/items`)
+> **API Endpoints**: #15 (`POST /quiz/generate`), #16 (`POST /question-banks`), #17 (`POST /question-banks/{id}/items`), #18 (`GET /question-banks/{id}/items`), #35 (`POST /question-banks/{id}/items/batch`)
 
 ---
 
@@ -17,10 +17,11 @@
 - **FR-QUIZ-03**: Enforce Draft-07 JSON Schema validation on all LLM responses (`BR-11`).
 - **FR-QUIZ-04**: In `FROM_NOTEBOOK` mode, mandate non-null `chunk_id` and exact source quote (`BR-10`).
 - **FR-QUIZ-05**: Allow teachers to edit generated items and save them into the Question Bank (`UC027`, `UC029`).
+- **FR-QUIZ-06**: `POST /question-banks/{id}/items/batch` persists an array of reviewed/edited question items atomically into the specified question bank.
 
 ## 3. Data Model & Entities
-- **Tables**: `question_banks`, `question_items` (`question_type`, `prompt`, `difficulty`, `answer_key`, `rubric`, `chunk_id` nullable), `question_options` (`option_text`, `is_correct`).
-- **DTOs**: `QuizGenerateRequestDTO`, `GeneratedQuestionDTO`, `QuestionBankDTO`, `QuestionItemDTO`.
+- **Tables**: `question_banks`, `question_items` (`topic VARCHAR(100)`, `question_type`, `prompt`, `difficulty`, `answer_key`, `rubric`, `chunk_id` nullable), `question_options` (`option_text`, `is_correct`).
+- **DTOs**: `QuizGenerateRequestDTO`, `GeneratedQuestionDTO` (`topic`, `prompt`, `options`, `answer_key`, `rubric`, `chunk_id`, `exact_quote`), `QuestionBankDTO`, `QuestionItemDTO`.
 
 ## 4. Error Handling
 | Scenario | Expected Behavior | HTTP Status |

@@ -9,18 +9,18 @@
 
 ## 1. Context & Goal
 - **Problem**: Instructors need to supply course materials in various forms (PDF, DOCX, TXT, Web URLs, direct text notes) so the AI can ground question generation strictly in course facts without hallucination.
-- **Goal**: Ingest documents, split into 512-token chunks, compute 1536-dim embeddings via `pgvector`, and expose hybrid search retrieval `< 250ms`.
+- **Goal**: Ingest documents, split into 512-token chunks, compute 768-dim embeddings via `pgvector`, and expose hybrid search retrieval `< 250ms`.
 
 ## 2. Functional Requirements
 - **FR-RAG-01**: Users can create Notebooks under workspaces (`UC015`).
 - **FR-RAG-02**: File upload accepts PDF, DOCX, TXT $\le 25\text{MB}$ (`UC010`).
 - **FR-RAG-03**: Direct Text Ingestion accepts raw text prompts/notes (30–20,000 chars) (`UC009`).
-- **FR-RAG-04**: URL Scraping extracts readable body text from public web links (`UC011`).
-- **FR-RAG-05**: Background worker (`VectorizationWorker`) extracts text, splits into 512 tokens with 10% overlap, generates 1536-dim embeddings, and persists to `document_chunks`.
+- **FR-RAG-04**: URL Scraping validates and extracts readable body text from public web links, rejecting private/loopback IP ranges to prevent SSRF (`UC011`, `SEC-SSRF`).
+- **FR-RAG-05**: Background worker (`VectorizationWorker`) extracts text, splits into 512 tokens with 10% overlap, generates 768-dim embeddings (via `text-embedding-004`), and persists to `document_chunks`. Client polls `GET /notebooks/{id}/documents` every 3s until document status transitions to `COMPLETED` or `FAILED`.
 - **FR-RAG-06**: Deleting a document purges all associated chunks and vector embeddings atomically (`UC014`, API #33).
 
 ## 3. Data Model & Entities
-- **Tables**: `notebooks`, `documents` (`status`: `PROCESSING | COMPLETED | FAILED`), `document_chunks` (`content`, `token_count`, `embedding vector(1536)`).
+- **Tables**: `notebooks`, `documents` (`status`: `PROCESSING | COMPLETED | FAILED`), `document_chunks` (`content`, `token_count`, `embedding vector(768)`).
 - **DTOs**: `CreateNotebookDTO`, `NotebookDTO`, `DocumentDTO`, `DirectPromptDTO`, `ChunkSearchResultDTO`.
 
 ## 4. Error Handling & Edge Cases

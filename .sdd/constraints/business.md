@@ -20,14 +20,14 @@
 | **BR-05** | Chunk Token Boundary | Document text chunking must strictly enforce 512 tokens maximum size with 10% overlap (approx 51 tokens) to preserve semantic context. |
 | **BR-06** | Upload Size Limit | Single document upload size is capped at 25MB maximum per file. Allowed extensions: `.pdf`, `.docx`, `.txt`. |
 | **BR-07** | Direct Text Prompt Boundary | Direct text prompts/notes must be between 30 and 20,000 characters for document ingestion, or 30 and 5,000 characters for direct quiz generation. |
-| **BR-08** | Vector Storage Format | All vector embeddings must be 1536-dimensional floating-point vectors stored using the `pgvector` column type `vector(1536)`. |
+| **BR-08** | Vector Storage Format | All vector embeddings must be 768-dimensional floating-point vectors stored using the `pgvector` column type `vector(768)` (matching Google `text-embedding-004` & Ollama `nomic-embed-text`). |
 | **BR-09** | Document Purge Cascade | Deleting a document or notebook must cascade-delete all child chunks and vector embeddings immediately. |
 
 ## 3. AI Quiz & Generation Rules
 
 | Rule ID | Rule Title | Formal Definition & Code Constraint |
 |---|---|---|
-| **BR-10** | Zero-Hallucination Citation | In `FROM_NOTEBOOK` mode, every AI-generated question item MUST contain a verified, existing `chunk_id` and exact text quote. In `DIRECT_TOPIC_PROMPT` mode, citations reference prompt text and `chunk_id` is null. |
+| **BR-10** | Zero-Hallucination Citation | In `FROM_NOTEBOOK` mode, every AI-generated question item MUST contain a verified, existing primary `chunk_id` and an `exact_quote` (normalized whitespace substring of chunk content). In `DIRECT_TOPIC_PROMPT` mode, citations reference prompt text and `chunk_id` is null. |
 | **BR-11** | Schema Compliance Gate | 100% of AI-generated JSON responses must validate against pre-defined Draft-07 JSON Schemas before database persistence. |
 | **BR-12** | Distractor Plausibility | MCQ questions must generate 4 distinct options with exactly 1 correct answer and 3 pedagogically plausible distractors. |
 | **BR-13** | Question Bank Immutability | Once a question is included in an active or completed exam paper, its prompt and answer key cannot be edited in-place (must create a new version). |
@@ -36,22 +36,22 @@
 
 | Rule ID | Rule Title | Formal Definition & Code Constraint |
 |---|---|---|
-| **BR-14** | Silent Draft Sync Interval | The client must silently sync student draft answers to the backend every 10 seconds without blocking UI interaction. |
-| **BR-15** | Timeout Auto-Submit | Exam attempts must auto-submit immediately when the exam countdown timer reaches zero (`00:00:00`). |
-| **BR-16** | Anti-Cheat Violation Threshold | If a student switches browser tabs or minimizes window >3 times during an `OFFICIAL_EXAM`, the exam is auto-submitted for review. |
+| **BR-14** | Silent Draft Sync Interval | The client must silently sync student draft answers and current `tab_switch_count` to the backend every 10 seconds. Sync is rejected (409 Conflict) if submission status is not `IN_PROGRESS`. |
+| **BR-15** | Timeout Auto-Submit & Grace Period | Exam attempts auto-submit when countdown hits `00:00:00`. Backend enforces a 60-second grace period for network latency: `deadline = started_at + duration_minutes + 60s`. |
+| **BR-16** | Anti-Cheat Violation Threshold | If a student switches browser tabs or minimizes window >3 times (`tab_switch_count > 3`) during an `OFFICIAL_EXAM`, the backend immediately transitions the attempt to `SUBMITTED` for teacher review. |
 | **BR-17** | Single Attempt Constraint | For `OFFICIAL_EXAM` papers, students are restricted to exactly 1 submission attempt per exam. |
 
 ## 5. Grading & Error Diagnostic Rules
 
 | Rule ID | Rule Title | Formal Definition & Code Constraint |
 |---|---|---|
-| **BR-20** | Error Taxonomy Classification | AI grading must categorize essay errors into exact taxonomy: `CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC`. |
+| **BR-20** | Error Taxonomy Classification | AI grading must categorize essay errors into exact taxonomy: `CONCEPTUAL_MISUNDERSTANDING`, `CALCULATION_ERROR`, `MISREAD_QUESTION`, `SYNTAX_ERROR`, `INCOMPLETE_LOGIC`, `NONE` (used when answer is 100% correct). |
 | **BR-21** | Teacher Override Authority | Manual score overrides by teachers supersede AI-assigned marks and record an immutable audit log entry. |
-| **BR-22** | Instant Objective Grading | MCQ and True/False questions must be graded instantly on submission using exact-match comparison against `question_options.is_correct`. |
+| **BR-22** | Instant Objective Grading & Precision | MCQ and True/False questions must be graded instantly on submission. All scores and weighted sums are persisted as `NUMERIC(5,2)` using `RoundingMode.HALF_UP`. |
 
 ## 6. Security, Privacy & Quota Rules
 
 | Rule ID | Rule Title | Formal Definition & Code Constraint |
 |---|---|---|
 | **BR-25** | PII Sanitization | Personal Identifiable Information (PII: Student Name, Student ID, Email) must be stripped locally before sending context text to third-party LLMs. |
-| **BR-26** | Daily Token Quota | Daily AI request limits: Students = 50 requests/day, Teachers = 200 requests/day, Admins = unlimited. |
+| **BR-26** | Daily Token Quota | Daily AI request limits: Students = 50 requests/day, Teachers = 200 requests/day, Admins = unlimited. Resets daily at `00:00:00 GMT+7` (Asia/Ho_Chi_Minh). Requests exceeding quota return `429 Too Many Requests`. |
